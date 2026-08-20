@@ -64,7 +64,7 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 - **Periodo**: Se non specificato nel messaggio iniziale, **chiedilo immediatamente**. Normalizzalo a uno o più mesi (`YYYYMM`). Se l'utente dice "questo trimestre" o un intervallo, espandilo nei mesi coperti.
 - **Dominio del brand**: Chiedi o conferma il dominio associato al brand (es. `yamamay.com`). Non blocca lo Step 1 (`run_meta.py init` accetta `--domain` vuoto): chiedilo/confermalo **dopo** aver creato la cartella del run, e appena noto aggiornalo con `python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key domain --value "<dominio>"` — serve prima dello Step 2b/3.
 - **Mercato/database Semrush**: se il TLD del dominio è inequivoco (`.it`→`it`, `.fr`→`fr`, `.de`→`de`, `.es`→`es`, `.co.uk`→`uk`) usalo. Se il dominio è generico (`.com`) e non è ovvio dal contesto della conversazione, **chiedi**: *"Su quale mercato/database Semrush devo lavorare (es. it, us, uk)?"*
-- **Varianti del brand secco**: parti dal nome brand ripulito (lowercase, es. `yamamay`). Se conosci typo/varianti ricorrenti chiedile all'utente, altrimenti procedi con la sola variante principale (potrai raffinare dopo aver visto `output/rules_suggestions.json` del clustering).
+- **Varianti del brand secco**: parti dal nome brand ripulito (lowercase, es. `yamamay`). Se conosci già typo/varianti ricorrenti da conversazioni precedenti, annotale come seed manuale — ma non fermarti qui: allo Step 3 esegui **sempre** il rilevamento automatico (`--mode detect-varianti`) di `public-claude-semrush-keyword-cleaner` sui CSV appena scaricati e fai confermare/correggere all'utente la lista risultante, prima di passare alla pulizia vera e propria.
 - **Settore** (per il clustering, Step 4): se non è deducibile con certezza dal brand/URL (es. un e-commerce moda è ovvio, un dominio generico o multi-categoria no), **chiedi**: *"Per quale settore sono queste keyword?"* — stessa domanda del `CLAUDE.md` di `public-claude-clustering-agent` quando il settore non è chiaro. Usi il valore raccolto qui in `--sector` allo Step 4, non un valore di comodo.
 
 ## Step 1 — Setup cartelle Drive + copie dei template
@@ -161,7 +161,26 @@ Richiami direttamente `scripts/semrush_cleaner.py` **di quel repo** (path risolt
 `fetch_dependencies.py` in Step 0, `keyword_cleaner.path` — stesso script dietro il comando
 `/pulisci-keyword` di quel progetto), sull'intera cartella
 `runs/<slug>/raw/` prodotta in 2a — niente concatenazione manuale dei mesi, ci pensa lui
-(consolidamento + dedup per keyword/data/URL):
+(consolidamento + dedup per keyword/data/URL).
+
+**3a. Rileva le varianti/misspelling del brand PRIMA di pulire** — stessa funzionalità dello
+Step 4 di `/pulisci-keyword` in quel progetto, non saltarla:
+```bash
+python "<KEYWORD_CLEANER_PATH>/scripts/semrush_cleaner.py" \
+  --mode detect-varianti \
+  --input-dir runs/<slug>/raw \
+  --brand-varianti "<eventuale seed manuale già noto, opzionale>"
+```
+Presenta all'utente le varianti auto-rilevate (log `🏷 Brand '...': varianti auto-rilevate:
+...`) e chiedi conferma con `AskUserQuestion`:
+- Se conferma (o non viene rilevata nessuna variante aggiuntiva): procedi allo Step 3b senza
+  `--salta-rilevamento-varianti` — verranno ricalcolate automaticamente in fase di pulizia,
+  passa solo l'eventuale seed manuale come `--brand-varianti`.
+- Se corregge: passa allo Step 3b la lista corretta come `--brand-varianti "lista corretta"`
+  insieme a `--salta-rilevamento-varianti` (disattiva il ricalcolo automatico e usa solo la
+  lista fornita).
+
+**3b. Esegui la pulizia**:
 ```bash
 python "<KEYWORD_CLEANER_PATH>/scripts/semrush_cleaner.py" \
   --mode clean \
@@ -169,14 +188,16 @@ python "<KEYWORD_CLEANER_PATH>/scripts/semrush_cleaner.py" \
   --output runs/<slug>/clean/report.xlsx \
   --raggruppamento consolidato \
   --tipo-query tutte \
-  --brand-varianti "<variante1,variante2>"
+  --brand-varianti "<variante1,variante2>" \
+  --salta-rilevamento-varianti
 ```
 Nota: passa sempre `--tipo-query tutte` qui — l'eventuale filtro Brand/Not Brand scelto
 dall'utente (vedi "Cosa chiedere SEMPRE") è già stato applicato a monte via
 `display_filter` nello Step 2a; `--brand-varianti` serve solo a valorizzare la colonna
-`Brand/Not Brand` nell'output, non a filtrare di nuovo. Segnala all'utente eventuali file
-`⏭ Ignorato` o colonne mancanti loggati dallo script (stesso comportamento del comando
-`/pulisci-keyword`).
+`Brand/Not Brand` nell'output, non a filtrare di nuovo. Ometti `--salta-rilevamento-varianti`
+se allo Step 3a l'utente ha confermato la lista auto-rilevata senza correggerla. Segnala
+all'utente eventuali file `⏭ Ignorato` o colonne mancanti loggati dallo script (stesso
+comportamento del comando `/pulisci-keyword`).
 
 `runs/<slug>/clean/report.xlsx` è un output leggibile (un foglio "Tutti i Dati" globale +
 un foglio per brand/mercato + LOG) utile per QA manuale, ma non ha ancora le colonne

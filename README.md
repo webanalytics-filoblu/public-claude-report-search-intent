@@ -206,6 +206,10 @@ script.
 - **Pulizia**: stesso principio — `fetch_dependencies.py` clona/aggiorna
   `public-claude-semrush-keyword-cleaner`, e `SKILL.md` invoca direttamente
   `scripts/semrush_cleaner.py` di quella copia (nessun porting/duplicazione della logica
-  in questo repo). Lo script produce un `.xlsx` multi-foglio (pensato per revisione
-  umana); `SKILL.md` lo converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne
+  in questo repo). Prima di pulire (Step 3a), invoca sempre `--mode detect-varianti` sullo
+  stesso script — la funzionalità di ricerca automatica delle varianti/misspelling del
+  brand dietro il comando `/pulisci-keyword` di quel progetto — e fa confermare/correggere
+  la lista all'utente, invece di affidarsi solo alla variante principale o a una lista
+  fornita a mano. Lo script produce un `.xlsx` multi-foglio (pensato per revisione umana);
+  `SKILL.md` lo converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne
   `Brand`/`Country`) che il clustering si aspetta.
