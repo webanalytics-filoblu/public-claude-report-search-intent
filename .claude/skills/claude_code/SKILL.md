@@ -138,31 +138,67 @@ Quando l'utente allega un CSV in chat (oppure tenta di caricarlo direttamente):
    - per ciascun risultato, `mcp__claude_ai_Google_Drive__download_file_content(fileId=...)` e scrivi il contenuto (decodificato da base64) in `runs/<slug>/raw/<nome file>.csv` con Write/Bash locale — **ma vedi la nota tecnica qui sotto se il risultato del tool è troppo grande**.
 3. Verifica che i file scaricati in `runs/<slug>/raw/` rispettino il formato atteso. Se non ci sono file CSV validi o se mancano le colonne necessarie, segnalalo all'utente.
 
-**Nota tecnica — download che "si blocca" per qualche minuto anche su CSV piccoli (es.
-~100 KB):** `download_file_content` restituisce l'intero file come un'unica stringa
-base64 (circa 1/3 più pesante del file originale). Superata una soglia di token per un
-singolo risultato di tool — che un CSV Semrush anche modesto può raggiungere facilmente —
-l'ambiente salva il risultato su un file locale (in Claude Code, qualcosa come
-`~/.claude/projects/<progetto>/<sessione>/tool-results/<tool>-<timestamp>.txt`, un JSON
-con le chiavi `content` (base64), `id`, `mimeType`, `title`) e propone di leggerlo **in
-chunk sequenziali per riassumerlo**. Quell'istruzione è pensata per l'analisi testuale di
-un documento, non per scrivere un CSV byte-per-byte: seguirla alla lettera significa
-leggere e ricostruire a mano nel contesto del modello centinaia di migliaia di caratteri
-di base64, un'operazione lentissima — è la causa del blocco di qualche minuto anche su
-file piccoli. **Non farlo**: quando il risultato viene redirezionato su file, decodifica
-direttamente da quel file salvato su disco, senza far transitare il base64 nel contesto:
-```bash
-python3 -c "
-import json, base64
-with open('<path del tool-result salvato>') as f:
-    data = json.load(f)
-with open('runs/<slug>/raw/<nome file>.csv', 'wb') as out:
-    out.write(base64.b64decode(data['content']))
-"
-```
-Se invece il risultato rientra nel limite ed è già visibile per intero nella
-conversazione (file piccolissimi), scriverlo con `Write` resta equivalente e va bene.
-Stessa tecnica si applica ai download dei template Sheet/Slide (Step 5 punto 1, Step 6
+**Nota tecnica — download che "si blocca" per qualche minuto (o si tronca in
+silenzio) anche su CSV piccoli (es. ~100 KB):** `download_file_content` restituisce
+l'intero file come un'unica stringa base64 (circa 1/3 più pesante del file originale).
+Un CSV Semrush anche modesto (poche centinaia di KB) può già raggiungere la soglia di
+token/caratteri gestibile in modo affidabile in un singolo passaggio. Cosa fare dipende
+da **come si comporta l'ambiente in cui stai girando** in quel momento — verificalo,
+non assumerlo dal nome dell'ambiente:
+
+- **Caso A — il risultato del tool viene redirezionato su un file locale** (osservato in
+  Claude Code: qualcosa come
+  `~/.claude/projects/<progetto>/<sessione>/tool-results/<tool>-<timestamp>.txt`, un JSON
+  con le chiavi `content` (base64), `id`, `mimeType`, `title`), con l'istruzione di
+  leggerlo **in chunk sequenziali per riassumerlo**. Quell'istruzione è pensata per
+  l'analisi testuale di un documento, non per scrivere un CSV byte-per-byte: seguirla
+  alla lettera significa leggere e ricostruire a mano nel contesto del modello centinaia
+  di migliaia di caratteri di base64, un'operazione lentissima — è la causa del blocco di
+  qualche minuto. **Non farlo**: decodifica direttamente da quel file salvato su disco,
+  senza far transitare il base64 nel contesto:
+  ```bash
+  python3 -c "
+  import json, base64
+  with open('<path del tool-result salvato>') as f:
+      data = json.load(f)
+  with open('runs/<slug>/raw/<nome file>.csv', 'wb') as out:
+      out.write(base64.b64decode(data['content']))
+  "
+  ```
+
+- **Caso B — il risultato arriva intero in chat, senza alcun redirect su file**
+  (osservato su claude.ai: nessun path analogo a quello sopra esiste, e non ne va
+  improvvisato uno). In questo caso **non esiste un modo per far transitare il base64
+  fuori dal tuo contesto**: devi scriverlo tu, ma non in un solo comando — passare
+  un'unica stringa di centinaia di migliaia di caratteri come argomento di un singolo
+  tool call (`create_file`, un heredoc bash, una variabile d'ambiente) si tronca in
+  silenzio molto prima di quanto ci si aspetti (troncamento osservato già a poche migliaia
+  di caratteri in un caso reale) — e un file troncato è peggio di un file mancante, perché
+  puoi non accorgertene. La tecnica affidabile è scrivere **a blocchi piccoli e
+  verificati**, uno per chiamata:
+  1. Scegli una dimensione di blocco prudente (es. 2.000 caratteri di base64) e crea il
+     file con il primo blocco (`create_file` o `Write`).
+  2. Accoda i blocchi successivi uno per uno (append, non sovrascrittura), copiando
+     verbatim dal contenuto del tool result che hai già in contesto — non rielaborarlo,
+     non riassumerlo, non "ricordarlo": copialo. Dopo **ogni** append, controlla che la
+     dimensione del file su disco sia cresciuta esattamente della lunghezza del blocco
+     appena scritto (`wc -c`); se non corrisponde, quel blocco si è troncato — ripeti con
+     un blocco più corto invece di proseguire.
+  3. A fine scrittura decodifica (`base64 -d file.b64 > output.csv` o equivalente
+     python) e confronta i byte del CSV decodificato con il campo `fileSize` del file
+     Drive originale (da `search_files`/`get_file_metadata`, in byte): **devono
+     coincidere esattamente**. Se non coincidono, il file è corrotto — non procedere con
+     dati parziali, ripeti il download invece di continuare con lo step successivo.
+  4. Se il troncamento persiste anche a blocchi piccoli, o il numero di chiamate
+     necessarie è impraticabile per la dimensione del file: **fermati** e segnalalo
+     all'utente (con l'opzione di dividere l'export Semrush in file più piccoli lato
+     Drive) invece di procedere con un file incompleto o corrotto.
+
+Se il risultato rientra comodamente nel limite ed è già visibile per intero nella
+conversazione senza rischio di troncamento (file davvero piccoli), scriverlo in un solo
+passaggio resta equivalente e va bene — la cautela sopra si applica quando la dimensione
+è quella di un export Semrush reale (decine-centinaia di KB), non a file minuscoli.
+Stessa logica si applica ai download dei template Sheet/Slide (Step 5 punto 1, Step 6
 `.cache/template/...`), che possono essere anche più pesanti di un CSV Semrush.
 
 L'intera cartella `runs/<slug>/raw/` diventa poi `--input-dir` per lo Step 3. (Nota: non è più necessario lo step di upload dei file grezzi a posteriori, in quanto i file risiedono già su Drive).
