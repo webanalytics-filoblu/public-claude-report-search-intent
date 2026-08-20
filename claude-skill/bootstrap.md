@@ -35,14 +35,18 @@ exportMimeType="text/csv")`, che restituisce il CSV in base64, da scrivere su di
 `--mode sync-rules` lo legge normalmente. Questo è lo stesso identico caso già documentato
 nel `CLAUDE.md` per l'ambiente claude.ai: non è una scorciatoia inventata qui.
 
-Se il file è grande e il risultato del tool viene troncato/redirezionato su un file locale
-per limite di token (stesso sintomo, causa e fix documentati nella "Nota tecnica" dello
-Step 2a del playbook canonico): decodifica il base64 **da quel file salvato**, non
-leggendolo a mano in chunk nel contesto — è lentissimo ed è la causa di un download che
-sembra "bloccarsi" per minuti anche su file di poche decine di KB. Il percorso esatto del
-file salvato dipende dal sandbox (in Claude Code è sotto `~/.claude/projects/...`); se qui
-non trovi un percorso analogo indicato dal tool, segui comunque il principio: mai
-ricostruire base64 a mano nel contesto quando esiste un'alternativa locale.
+Se il file è grande, applica la "Nota tecnica" dello Step 2a del playbook canonico
+(stesso sintomo, causa e fix — non ripetuta qui). **In questo ambiente (claude.ai) aspettati
+di norma il Caso B di quella nota**: il risultato di `download_file_content` arriva
+intero in chat, senza redirect automatico su un file locale (verificato: non esiste un
+path analogo a quello di Claude Code) — quindi scrivi il base64 a blocchi piccoli e
+verificati come descritto lì (append incrementale con controllo `wc -c` dopo ogni
+blocco, poi confronto byte-per-byte del CSV decodificato con `fileSize` da Drive), non
+in un solo comando: un unico `create_file`/heredoc con l'intero base64 si tronca in
+silenzio molto prima di quanto sembri necessario, e un file troncato è peggio di un
+download fallito perché puoi non accorgertene. Se anche a blocchi piccoli il file
+risultasse ancora corrotto o il numero di chiamate necessarie fosse impraticabile,
+fermati e segnalalo invece di procedere con dati parziali.
 
 ## Step 0d — Verifica accesso ai template Drive
 
