@@ -43,7 +43,10 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
    Step 7, utile per sapere quale versione della logica di pulizia/clustering ha girato in
    questo run). Se `CLUSTERING_AGENT_PATH` / `KEYWORD_CLEANER_PATH` sono valorizzate nel
    `.env`, lo script le usa cosi' come sono (override locale per testare modifiche non
-   ancora pushate) senza toccare git.
+   ancora pushate) senza toccare git. `<CLUSTERING_AGENT_PATH>/clustering-config.json`
+   (l'ID della cartella Drive "Clustering rules" richiesto dal `CLAUDE.md` di quel repo)
+   arriva già clonato: è committato in git in `public-claude-clustering-agent`, non serve
+   più generarlo qui.
 4. `GOOGLE_SLIDE_EXAMPLE_ID` in `drive_config.json` (facoltativo ma consigliato) è una presentazione di
    riferimento già compilata (tono/stile editoriale reale) — la leggi in sola lettura in
    Step 6 con `mcp__claude_ai_Google_Drive__read_file_content`, non va mai duplicata né
@@ -64,7 +67,7 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 - **Periodo**: Se non specificato nel messaggio iniziale, **chiedilo immediatamente**. Normalizzalo a uno o più mesi (`YYYYMM`). Se l'utente dice "questo trimestre" o un intervallo, espandilo nei mesi coperti.
 - **Dominio del brand**: Chiedi o conferma il dominio associato al brand (es. `yamamay.com`). Non blocca lo Step 1 (`run_meta.py init` accetta `--domain` vuoto): chiedilo/confermalo **dopo** aver creato la cartella del run, e appena noto aggiornalo con `python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key domain --value "<dominio>"` — serve prima dello Step 2b/3.
 - **Mercato/database Semrush**: se il TLD del dominio è inequivoco (`.it`→`it`, `.fr`→`fr`, `.de`→`de`, `.es`→`es`, `.co.uk`→`uk`) usalo. Se il dominio è generico (`.com`) e non è ovvio dal contesto della conversazione, **chiedi**: *"Su quale mercato/database Semrush devo lavorare (es. it, us, uk)?"*
-- **Varianti del brand secco**: parti dal nome brand ripulito (lowercase, es. `yamamay`). Se conosci typo/varianti ricorrenti chiedile all'utente, altrimenti procedi con la sola variante principale (potrai raffinare dopo aver visto `output/rules_suggestions.json` del clustering).
+- **Varianti del brand secco**: parti dal nome brand ripulito (lowercase, es. `yamamay`). Se conosci già typo/varianti ricorrenti da conversazioni precedenti, annotale come seed manuale — il rilevamento/conferma delle altre varianti è a carico dello Step 3 (segui il comando `/pulisci-keyword` per intero, non solo `--mode clean`).
 - **Settore** (per il clustering, Step 4): se non è deducibile con certezza dal brand/URL (es. un e-commerce moda è ovvio, un dominio generico o multi-categoria no), **chiedi**: *"Per quale settore sono queste keyword?"* — stessa domanda del `CLAUDE.md` di `public-claude-clustering-agent` quando il settore non è chiaro. Usi il valore raccolto qui in `--sector` allo Step 4, non un valore di comodo.
 
 ## Step 1 — Setup cartelle Drive + copie dei template
@@ -157,26 +160,30 @@ scriverà anche le formule Sheets per le variazioni % YoY (non calcolarle tu).
 
 ## Step 3 — Pulizia (public-claude-semrush-keyword-cleaner)
 
-Richiami direttamente `scripts/semrush_cleaner.py` **di quel repo** (path risolto da
-`fetch_dependencies.py` in Step 0, `keyword_cleaner.path` — stesso script dietro il comando
-`/pulisci-keyword` di quel progetto), sull'intera cartella
-`runs/<slug>/raw/` prodotta in 2a — niente concatenazione manuale dei mesi, ci pensa lui
-(consolidamento + dedup per keyword/data/URL):
-```bash
-python "<KEYWORD_CLEANER_PATH>/scripts/semrush_cleaner.py" \
-  --mode clean \
-  --input-dir runs/<slug>/raw \
-  --output runs/<slug>/clean/report.xlsx \
-  --raggruppamento consolidato \
-  --tipo-query tutte \
-  --brand-varianti "<variante1,variante2>"
-```
-Nota: passa sempre `--tipo-query tutte` qui — l'eventuale filtro Brand/Not Brand scelto
-dall'utente (vedi "Cosa chiedere SEMPRE") è già stato applicato a monte via
-`display_filter` nello Step 2a; `--brand-varianti` serve solo a valorizzare la colonna
-`Brand/Not Brand` nell'output, non a filtrare di nuovo. Segnala all'utente eventuali file
-`⏭ Ignorato` o colonne mancanti loggati dallo script (stesso comportamento del comando
-`/pulisci-keyword`).
+Non duplicare qui i passaggi di quel progetto: **leggi integralmente**
+`<KEYWORD_CLEANER_PATH>/.claude/commands/pulisci-keyword.md` (path risolto da
+`fetch_dependencies.py` in Step 0 — è il comando `/pulisci-keyword` di quel repo, che
+richiama `scripts/semrush_cleaner.py`) e seguine **tutti** gli step, nell'ordine in cui
+sono scritti (conferma brand, conferma varianti, eventuali domande su URL esclusi/di
+confronto, pulizia, riepilogo, eventuale ricerca varianti mancanti) — non saltarne nessuno
+per andare dritto a `--mode clean`. Così, se quel progetto cambia il proprio flusso, questo
+playbook resta allineato senza bisogno di modifiche qui: la fonte di verità è quel file,
+non questa pagina.
+
+Applica solo questa equivalenza di percorsi (quel comando è scritto per girare nella
+propria repo, con `input/`/`output/` relativi):
+
+| Nel comando `/pulisci-keyword` | In questo run |
+|---|---|
+| `input/` (cartella CSV) | `runs/<slug>/raw/` (prodotta allo Step 2a) |
+| `output/Report.xlsx` (o altro path in `output/`) | `runs/<slug>/clean/report.xlsx` |
+
+E queste due eccezioni, specifiche a questo flusso (non fanno parte del comando standard):
+- Passa sempre `--tipo-query tutte`: l'eventuale filtro Brand/Not Brand scelto dall'utente
+  (vedi "Cosa chiedere SEMPRE") è già stato applicato a monte via `display_filter` nello
+  Step 2a — non serve rifiltrare qui.
+- Il brand è già noto da "Cosa chiarire con l'utente": usalo come riferimento per lo step
+  di conferma brand del comando invece di chiederlo di nuovo da zero.
 
 `runs/<slug>/clean/report.xlsx` è un output leggibile (un foglio "Tutti i Dati" globale +
 un foglio per brand/mercato + LOG) utile per QA manuale, ma non ha ancora le colonne
@@ -194,61 +201,31 @@ scrive `runs/<slug>/clean/all_clean.csv` — è l'input del clustering.
 
 ## Step 4 — Clustering (public-claude-clustering-agent)
 
-Usa il path risolto da `fetch_dependencies.py` in Step 0 (`clustering_agent.path`, di
-default `.cache/public-claude-clustering-agent/`): richiami direttamente `scripts/cluster.py`
-**di quel repo**, passando come `--input/--output/--workdir` i percorsi di **questo** run.
+Non duplicare qui i passaggi di quel progetto: **leggi integralmente**
+`<CLUSTERING_AGENT_PATH>/CLAUDE.md` (path risolto da `fetch_dependencies.py` in Step 0) e
+seguine **tutti** gli step (scelta vertical → sincronizza da Drive → prepare → analyze →
+eventuale add-rules → process-batches → merge → riepilogo finale → eventuale add-brands) —
+non saltarne nessuno per andare dritto a `--mode merge`. Così, se quel progetto cambia il
+proprio flusso (nuove modalità, nuovo formato regole, ecc.), questo playbook resta
+allineato senza bisogno di modifiche qui: la fonte di verità è quel file, non questa
+pagina.
 
-**Il ruleset non è più committato in quel repo** (`rules/` è in `.gitignore` lì, quindi
-`fetch_dependencies.py` non lo porta mai in `.cache/`): vive in Google Sheet condivisi su
-Drive, cartella **"Clustering rules"** (id `1sBd0k1QSc23E_5ii6Nc1DtZ0oD1GjusS`). Prima di
-`--mode prepare` chiedi sempre all'utente quale **vertical** usare — elenca le sottocartelle
-reali sotto quella cartella Drive (`search_files`, escludendo quelle con prefisso `_`), non
-indovinarlo dal nome del brand — poi sincronizza le regole di quel vertical/lingua nel
-workdir di **questo** run seguendo alla lettera la sezione "Sincronizza da Google Drive" del
-`CLAUDE.md` di quel repo (letto in Step 0): scarica ogni Sheet come `.csv` sotto
-`runs/<slug>/clustering/workdir/sheets_raw/...`, poi materializza:
-```bash
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode sync-rules \
-  --workdir runs/<slug>/clustering/workdir
-```
-Le regole materializzate finiscono sotto `runs/<slug>/clustering/workdir/rules/` (risolto
-relativamente al `--workdir` passato, non più alla posizione dello script): risincronizza
-solo se cambi vertical/lingua o se lo Sheet è stato aggiornato dopo l'ultima sync di questa
-sessione.
+Applica solo questa equivalenza di percorsi (quel `CLAUDE.md` è scritto per girare nella
+propria repo, con `input/`/`output/` relativi):
 
-Poi segui gli step descritti nel `CLAUDE.md` di quel repo (prepare → analyze → eventuale
-add-rules → process-batches → merge) — nota: se aggiunge nuove regole (`--mode add-rules`),
-scrive solo nella copia effimera `runs/<slug>/clustering/workdir/rules/` (utile per
-riclassificare subito in questo run) e produce un blocco pronto da incollare a mano nello
-Sheet Drive giusto (sezione "Proponi regole/brand" del `CLAUDE.md` di quel repo) — non c'è
-più alcuna scrittura/commit automatica su GitHub per le regole:
+| Nel `CLAUDE.md` di quel repo | In questo run |
+|---|---|
+| `input/<file>.csv` | `runs/<slug>/clean/all_clean.csv` (`--input`) |
+| `output/workdir/` | `runs/<slug>/clustering/workdir/` (`--workdir`) |
+| `output/[nome-file]-clustered.csv` | `runs/<slug>/clustering/clustered.csv` (`--output`) |
 
-```bash
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode prepare \
-  --input runs/<slug>/clean/all_clean.csv --sector "<settore>" \
-  --workdir runs/<slug>/clustering/workdir
-
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode analyze \
-  --workdir runs/<slug>/clustering/workdir
-# presenta i pattern non coperti (count >= 3) e proponi cluster/sotto cluster all'utente
-
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode add-rules \
-  --workdir runs/<slug>/clustering/workdir
-# (solo se l'utente approva nuove regole — riclassifica in locale, non tocca il repo condiviso salvo richiesta esplicita)
-
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode process-batches \
-  --workdir runs/<slug>/clustering/workdir
-# per ogni batch: leggi il prompt in workdir/prompts/, clusterizza TU le keyword secondo
-# la tabella di regole del CLAUDE.md di public-claude-clustering-agent, scrivi il JSON in
-# workdir/results/
-
-python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode merge \
-  --output runs/<slug>/clustering/clustered.csv --workdir runs/<slug>/clustering/workdir
-```
+E questa eccezione, specifica a questo flusso: il **settore** è già stato raccolto in
+"Cosa chiarire con l'utente" — usa quel valore come `--sector` invece di richiederlo di
+nuovo, anche se il `CLAUDE.md` di quel repo dice di chiederlo.
 
 Risultato: `runs/<slug>/clustering/clustered.csv` con colonne `Cluster` e `Sotto Cluster`
-aggiunte. Se lo script segnala nuovi brand competitor (`brands_suggestions.json`),
-presentali all'utente come da CLAUDE.md di quel repo — non serve fare push automatico.
+aggiunte (più eventuali brand aggiunti via `--mode add-brands` e la tabella di riepilogo
+finale, entrambi parte del flusso di quel `CLAUDE.md` seguito sopra).
 
 ## Step 4bis — Selezione cluster (e split per Genere) per il report finale
 
@@ -538,7 +515,8 @@ numero keyword totali, numero cluster trovati dalla clusterizzazione vs. numero
 effettivamente incluso nel report (selezione di Step 4bis), volume totale per cluster
 incluso, quali colonne extra (Genere, Materiale/Colore, ...) hanno avuto un tab/grafico
 di breakdown e quali di queste sono finite anche in una slide dedicata (Step 6a),
-eventuali brand competitor rilevati in Step 4, e i due `commit` risolti da
+eventuali brand competitor rilevati (e, se approvati, aggiunti con `--mode add-brands`) in
+Step 4, e i due `commit` risolti da
 `fetch_dependencies.py` in Step 0 (versione di clustering-agent/keyword-cleaner usata in
 questo run).
 

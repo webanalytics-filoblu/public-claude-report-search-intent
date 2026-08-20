@@ -84,7 +84,8 @@ Applicala in quest'ordine:
    `public-claude-semrush-keyword-cleaner`): per ciascun `{repo, branch}` distinto non ancora
    clonato, ripeti esattamente lo stesso `fetch_repo` + `cat` (per `read_in_context`, es. il
    `CLAUDE.md` delle regole di clustering) + copia (per `fetch_to_sandbox`, es.
-   `scripts/cluster.py`, `scripts/semrush_cleaner.py`) + rimozione del checkout temporaneo.
+   `scripts/cluster.py`, `scripts/semrush_cleaner.py`, `clustering-config.json`) +
+   rimozione del checkout temporaneo.
 
 3. **Dipendenze Python**: installa i pacchetti elencati in `pip_packages` del manifest
    (`pip install pandas>=2.0 openpyxl>=3.1 python-pptx>=0.6.23 python-dotenv>=1.0` o

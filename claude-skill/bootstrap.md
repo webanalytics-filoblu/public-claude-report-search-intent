@@ -19,8 +19,10 @@ gestita da questo repo, nessun refresh token da rinnovare.
 Il ruleset di `public-claude-clustering-agent` (cluster/sotto-cluster, brand correlati, attributi)
 **non è più committato in quel repo** — `rules/` è in `.gitignore` lì dal commit "google
 sheet rules v1": un fetch di quella directory via GitHub, con qualunque branch, restituisce
-sempre 404. Vive invece in Google Sheet condivisi su Drive, cartella "Clustering rules"
-(`folder_id` in `clustering_rules_drive` del manifest) — dettagli e formato in
+sempre 404. Vive invece in Google Sheet condivisi su Drive, cartella "Clustering rules" (id
+in `work/clustering-config.json`, copiato al pari di `scripts/cluster.py` allo Step 0a di
+`SKILL.md` — committato in git in quel repo: la cartella non è più condivisa "chiunque
+abbia il link", quindi l'ID da solo non è più un segreto) — dettagli e formato in
 `clustering_rules_doc` (già letto allo Step 0a di `SKILL.md`).
 
 Non c'è nulla da scaricare qui: il vertical dipende dal brand, che non è ancora noto a
