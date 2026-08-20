@@ -1,4 +1,4 @@
-# claude-report-search-intent
+# public-claude-report-search-intent
 
 Skill Claude Code che, dato un URL di brand e un periodo, produce un report di search
 intent completo:
@@ -6,10 +6,10 @@ intent completo:
 1. **Riceve** i CSV grezzi di posizioni organiche esportati manualmente da Semrush (caricati
    in chat dall'utente — non più via chiamate API dirette, per contenere i costi)
 2. **Pulisce** i dati richiamando lo script reale di
-   [app-script-semrush-keyword-cleaner](https://github.com/webanalytics-filoblu/app-script-semrush-keyword-cleaner)
+   [public-claude-semrush-keyword-cleaner](https://github.com/webanalytics-filoblu/public-claude-semrush-keyword-cleaner)
    (`scripts/semrush_cleaner.py`, lo stesso dietro il comando `/pulisci-keyword` di
    quel progetto), clonato/aggiornato automaticamente da GitHub
-3. **Clusterizza** le keyword con [claude-clustering-agent](https://github.com/webanalytics-filoblu/claude-clustering-agent), clonato/aggiornato automaticamente da GitHub
+3. **Clusterizza** le keyword con [public-claude-clustering-agent](https://github.com/webanalytics-filoblu/public-claude-clustering-agent), clonato/aggiornato automaticamente da GitHub
 4. **Popola un Google Sheet**: tab "Volumi Brand" (brand secco, ultimi 3 anni), tab
    "Clustering" (risultato completo), un tab per cluster con tabella di riepilogo
    Sotto Cluster + grafico a torta
@@ -42,11 +42,10 @@ aggiornamento in-place di un file Drive esistente (ogni run/ricarica crea un nuo
 comportamento già in parte presente: ogni run aveva già una sua sottocartella con
 timestamp).
 
-Su Claude Code l'accesso a GitHub resta git nativo (nessun token salvo repo privati senza
-credenziali già configurate sulla macchina, vedi sotto). Sulla variante claude.ai, invece,
-`GITHUB_TOKEN` torna a servire: il meccanismo primario è `git clone` (token solo nell'URL,
-un comando per repo), con il connettore GitHub collegato alla chat come fallback se
-`git clone` viene bloccato dal sandbox per motivi di sicurezza — vedi
+I tre repo coinvolti in questo flusso (questo, `public-claude-clustering-agent`,
+`public-claude-semrush-keyword-cleaner`) sono tutti pubblici: sia su Claude Code sia sulla
+variante claude.ai l'accesso è un semplice `git clone` via HTTPS, senza alcun token o
+connettore GitHub (non ne esiste uno in questo workspace) — vedi
 `claude-skill/bootstrap.md`.
 
 ## Setup una tantum
@@ -57,24 +56,20 @@ un comando per repo), con il connettore GitHub collegato alla chat come fallback
 pip install -r requirements.txt
 ```
 
-### 2. Dipendenze GitHub (claude-clustering-agent / app-script-semrush-keyword-cleaner)
+### 2. Dipendenze GitHub (public-claude-clustering-agent / public-claude-semrush-keyword-cleaner)
 
 Non serve clonarle a mano: `scripts/fetch_dependencies.py` le clona/aggiorna
 automaticamente da GitHub in `.cache/` ad ogni run della skill (Step 0 di `SKILL.md`).
-Verifica solo che git riesca ad accedere ai due repo con le credenziali già configurate su
-questa macchina:
+Entrambi i repo sono pubblici, quindi non serve alcuna credenziale:
 
 ```bash
 python scripts/fetch_dependencies.py
 ```
 
-Deve stampare un JSON con `path` e `commit` per entrambi i repo. Se fallisce perché i repo
-sono privati e questa macchina non ha già credenziali git configurate (git credential
-manager / `gh auth login`), imposta `GITHUB_TOKEN` nel `.env` (vedi commenti in
-`.env.example`) — necessario solo per questo scenario locale, non per la variante
-claude.ai. Se invece vuoi lavorare su un tuo checkout locale (es. per testare modifiche non
-ancora pushate), valorizza `CLUSTERING_AGENT_PATH`/`KEYWORD_CLEANER_PATH`: in quel caso lo
-script usa il percorso così com'è e non tocca git.
+Deve stampare un JSON con `path` e `commit` per entrambi i repo. Se vuoi lavorare su un tuo
+checkout locale (es. per testare modifiche non ancora pushate), valorizza
+`CLUSTERING_AGENT_PATH`/`KEYWORD_CLEANER_PATH`: in quel caso lo script usa il percorso così
+com'è e non tocca git.
 
 ### 3. Cartella Drive radice e template
 
@@ -112,11 +107,12 @@ segue i passi in `.claude/skills/claude_code/SKILL.md`.
 **Su claude.ai** esiste una variante in [claude-skill/SKILL.md](claude-skill/SKILL.md) — la
 skill effettivamente caricata sull'organizzazione, già rivista una volta e non scaricata a
 runtime. Contiene per intero (Step 0a) l'**unica procedura meccanica di accesso a GitHub**:
-`git clone` (token solo nell'URL, un comando per repo), con il **connettore GitHub** come
-fallback se `git clone` viene bloccato dal sandbox per motivi di sicurezza. Questa
-procedura scarica manifest, playbook canonico e codice per tutti i repo coinvolti — un solo
-`git clone` per repo, riusato sia per i file piccoli letti con `cat` (`read_in_context`) sia
-per il codice copiato sul filesystem senza attraversare il contesto (`fetch_to_sandbox`).
+`git clone` su repo pubblici, senza alcun token né connettore GitHub (non ne esiste uno in
+questo workspace: se `git clone` viene bloccato dal sandbox, la skill si ferma e lo segnala).
+Questa procedura scarica manifest, playbook canonico e codice per tutti i repo coinvolti —
+un solo `git clone` per repo, riusato sia per i file piccoli letti con `cat`
+(`read_in_context`) sia per il codice copiato sul filesystem senza attraversare il contesto
+(`fetch_to_sandbox`).
 
 **Deliberatamente separato da questo**: [claude-skill/bootstrap.md](claude-skill/bootstrap.md),
 scaricato dinamicamente insieme al resto, contiene **solo guida e dati di dominio** (regole
@@ -132,11 +128,11 @@ pratiche:
   da scaricare (e le `rules/` del clustering sono prese elencando la directory, così una
   lingua nuova non richiede modifiche). La procedura meccanica di fetch invece **va
   ricaricata su claude.ai se cambia** (cambia raramente: è uno schema fisso git-clone/repo).
-- **Un solo segreto in questo flusso**: `GITHUB_TOKEN` (usato nell'URL di `git clone`, non
-  richiesto se i repo sono pubblici o se si usa il fallback via connettore). Nessun OAuth
-  Google: l'unica cosa da verificare è che il tool MCP Google Drive sia collegato in
-  sessione — nessun JSON di credenziali Google da recuperare, nessun refresh token da
-  rinnovare.
+- **Nessun segreto in questo flusso**: i tre repo coinvolti (questo,
+  `public-claude-clustering-agent`, `public-claude-semrush-keyword-cleaner`) sono tutti
+  pubblici, quindi niente `GITHUB_TOKEN`. Nessun OAuth Google: l'unica cosa da verificare è
+  che il tool MCP Google Drive sia collegato in sessione — nessun JSON di credenziali Google
+  da recuperare, nessun refresh token da rinnovare.
 - **Prerequisito non aggirabile**: il sandbox di code execution di claude.ai filtra gli host
   in uscita, quindi un admin del workspace deve allowlistare gli host elencati in
   `required_sandbox_hosts` del manifest (`pypi.org`/`files.pythonhosted.org` per il
@@ -144,29 +140,29 @@ pratiche:
   Google API: tutte le chiamate Drive/Sheets/Slides passano dal tool MCP Google Drive
   collegato alla chat, non da chiamate HTTP dirette del code execution.
 
-**Perché `git clone` e non il connettore GitHub come meccanismo primario**: gli script (~330
-KB, ≈85k token) devono andare da GitHub al filesystem senza attraversare il contesto — il
-connettore legge un file alla volta e il contenuto transita comunque dal contesto prima di
-poter essere scritto su disco, cosa che satureresti la sessione. Il connettore resta un
-fallback valido (non un errore) per i workspace dove `git clone` viene bloccato dal sandbox
-per motivi di sicurezza, a costo di quel transito di token per i file bulk.
+**Perché `git clone` e non un connettore GitHub**: gli script (~330 KB, ≈85k token) devono
+andare da GitHub al filesystem senza attraversare il contesto — un connettore che legge un
+file alla volta farebbe transitare comunque il contenuto dal contesto prima di poter essere
+scritto su disco, cosa che satureresti la sessione. Non esiste comunque un connettore GitHub
+in questo workspace: se `git clone` viene bloccato dal sandbox, la skill si ferma e lo
+segnala all'utente, senza fallback.
 
 ## Struttura repo
 
 ```text
-claude-report-search-intent/
+public-claude-report-search-intent/
 ├── .claude/skills/claude_code/SKILL.md   ← orchestrazione end-to-end
 ├── scripts/
-│   ├── fetch_dependencies.py     ← clona/aggiorna da GitHub claude-clustering-agent e
-│   │                                 app-script-semrush-keyword-cleaner in .cache/
+│   ├── fetch_dependencies.py     ← clona/aggiorna da GitHub public-claude-clustering-agent e
+│   │                                 public-claude-semrush-keyword-cleaner in .cache/
 │   ├── run_meta.py                ← crea/aggiorna runs/<slug>/run_meta.json (locale, nessuna chiamata Drive)
 │   ├── xlsx_to_clean_csv.py       ← converte l'xlsx del keyword-cleaner nel CSV per il clustering
 │   ├── build_sheet_xlsx.py        ← genera l'xlsx del report offline (partendo dal template Sheet scaricato)
 │   ├── build_slides_pptx.py       ← genera il pptx del deck offline (partendo dal template Slides scaricato)
 │   ├── inspect_template_xlsx.py   ← diagnostica read-only su un template Sheet esportato in xlsx
 │   └── inspect_template_pptx.py   ← diagnostica read-only su un template Slides esportato in pptx
-├── .cache/                    ← copie GitHub di claude-clustering-agent /
-│                                  app-script-semrush-keyword-cleaner (gitignored, auto-generate)
+├── .cache/                    ← copie GitHub di public-claude-clustering-agent /
+│                                  public-claude-semrush-keyword-cleaner (gitignored, auto-generate)
 ├── runs/                      ← output per-run (gitignored: dati keyword dei clienti)
 └── .env                        ← ID template Drive + config (gitignored)
 ```
@@ -196,14 +192,14 @@ script.
   "linked"). Il testo editoriale per-cluster (titolo, esempi di keyword, paragrafo di
   insight) lo scrive Claude stesso, guardando i dati reali, ma ora **prima** di generare
   il pptx (non più in un secondo giro su slide già duplicate) — vedi `SKILL.md`, Step 6b.
-- **Clustering**: `fetch_dependencies.py` clona/aggiorna `claude-clustering-agent` da
-  GitHub in `.cache/` (git clone/pull, non l'API Contents+token del `claude-skill/SKILL.md`
+- **Clustering**: `fetch_dependencies.py` clona/aggiorna `public-claude-clustering-agent` da
+  GitHub in `.cache/` (git clone/pull, non l'API Contents del `claude-skill/SKILL.md`
   di quel repo — pensato per girare su claude.ai senza filesystem persistente; qui invece
-  giriamo su Claude Code con git disponibile, quindi un clone locale è più semplice e non
-  richiede un token dedicato salvo repo privati senza credenziali git già configurate).
-  `SKILL.md` invoca poi direttamente `scripts/cluster.py` di quella copia.
+  giriamo su Claude Code con git disponibile, quindi un clone locale è più semplice; il repo
+  è pubblico, nessun token richiesto). `SKILL.md` invoca poi direttamente
+  `scripts/cluster.py` di quella copia.
 - **Pulizia**: stesso principio — `fetch_dependencies.py` clona/aggiorna
-  `app-script-semrush-keyword-cleaner`, e `SKILL.md` invoca direttamente
+  `public-claude-semrush-keyword-cleaner`, e `SKILL.md` invoca direttamente
   `scripts/semrush_cleaner.py` di quella copia (nessun porting/duplicazione della logica
   in questo repo). Lo script produce un `.xlsx` multi-foglio (pensato per revisione
   umana); `SKILL.md` lo converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne

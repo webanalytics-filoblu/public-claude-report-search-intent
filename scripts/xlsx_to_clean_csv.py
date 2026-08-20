@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Converte il report .xlsx prodotto da app-script-semrush-keyword-cleaner
+Converte il report .xlsx prodotto da public-claude-semrush-keyword-cleaner
 (scripts/semrush_cleaner.py --mode clean, foglio "Tutti i Dati") nel CSV piatto
-atteso in input da claude-clustering-agent, aggiungendo le colonne Brand e Country
+atteso in input da public-claude-clustering-agent, aggiungendo le colonne Brand e Country
 che il cleaner non scrive (servono al downstream: build_sheet.py e le regole di
 clustering per lingua).
 
@@ -26,14 +26,14 @@ HEADERS_IN = ["Mercato", "Mercato Code", "Data", "Keyword", "Position", "Search 
 # viene ignorata e sovrascritta col nome brand passato a --brand.
 HEADERS_IN_WITH_DOMAIN_BRAND = ["Brand"] + HEADERS_IN
 
-# Bucket lingua usati dalle regole di claude-clustering-agent (rules/it|en|es|fr|de.json)
+# Bucket lingua usati dalle regole di public-claude-clustering-agent (rules/it|en|es|fr|de.json)
 COUNTRY_BUCKET = {"it": "IT", "es": "ES", "fr": "FR", "de": "DE"}
 
 
 def main():
     parser = argparse.ArgumentParser(description="XLSX del keyword-cleaner -> CSV piatto per il clustering")
     parser.add_argument("--xlsx", required=True, help="report .xlsx prodotto da semrush_cleaner.py --mode clean")
-    parser.add_argument("--output", required=True, help="CSV di output (input per claude-clustering-agent)")
+    parser.add_argument("--output", required=True, help="CSV di output (input per public-claude-clustering-agent)")
     parser.add_argument("--brand", required=True, help="Nome brand da scrivere nella colonna Brand")
     args = parser.parse_args()
 

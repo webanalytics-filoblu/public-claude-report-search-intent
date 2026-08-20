@@ -2,15 +2,17 @@
   "_comment": [
     "Manifest letto dal loader claude-skill/SKILL.md come PRIMO passo di ogni sessione su",
     "claude.ai. Serve a non avere piu' liste di file hardcoded dentro la skill: quando si",
-    "aggiunge uno script a questo repo (o una lingua alle rules di claude-clustering-agent)",
+    "aggiunge uno script a questo repo (o una lingua alle rules di public-claude-clustering-agent)",
     "si aggiorna SOLO questo file e la skill lo recepisce al bootstrap successivo, senza che",
     "nessun collega debba ricaricare nulla su claude.ai.",
     "",
     "I file restano divisi in due classi per motivo d'uso, ma il meccanismo di accesso a",
     "GitHub e' UNICO per entrambe ed e' definito per intero in claude-skill/SKILL.md, Step",
     "0a (skill statica gia' rivista e caricata su claude.ai, non scaricata a runtime): 'git",
-    "clone' (token solo nell'URL, un comando per repo) come meccanismo primario, connettore",
-    "GitHub come fallback se 'git clone' viene bloccato dal sandbox per motivi di sicurezza:",
+    "clone' su repo pubblici, senza alcuna credenziale/token (i tre repo coinvolti sono",
+    "tutti pubblici). Se 'git clone' viene bloccato dal sandbox per motivi di sicurezza, la",
+    "skill si ferma e lo segnala: non esiste un connettore GitHub in questo workspace da",
+    "usare come fallback.",
     "  - read_in_context: file su cui Claude deve RAGIONARE (il playbook, la tabella di",
     "    regole del clustering). Sono ~30 KB in tutto: dopo il clone si leggono con 'cat'",
     "    dal checkout locale (attraversano il contesto di proposito, per essere ragionati).",
@@ -19,17 +21,17 @@
     "    locale direttamente su disco, MAI letto nel contesto (vedi SKILL.md, Step 0a)."
   ],
 
-  "_comment_read_in_context": "Fanno parte dello stesso 'git clone' usato per fetch_to_sandbox quando repo+branch coincidono (vedi claude-skill/SKILL.md Step 0a: un solo clone per repo, riusato per entrambi gli scopi), altrimenti un clone dedicato. Letti con 'cat' dal checkout locale, mai via connettore GitHub salvo fallback (git clone bloccato dal sandbox). Ogni voce di read_in_context e' un oggetto {repo, branch, path, why}.",
+  "_comment_read_in_context": "Fanno parte dello stesso 'git clone' usato per fetch_to_sandbox quando repo+branch coincidono (vedi claude-skill/SKILL.md Step 0a: un solo clone per repo, riusato per entrambi gli scopi), altrimenti un clone dedicato. Letti con 'cat' dal checkout locale (repo pubblici, nessun connettore GitHub in questo workspace). Ogni voce di read_in_context e' un oggetto {repo, branch, path, why}.",
 
   "read_in_context": {
     "canonical_playbook": {
-      "repo": "webanalytics-filoblu/claude-report-search-intent",
-      "branch": "feature-only-mcp",
+      "repo": "webanalytics-filoblu/public-claude-report-search-intent",
+      "branch": "main",
       "path": ".claude/skills/claude_code/SKILL.md",
       "why": "Unica fonte di verita' del flusso end-to-end, condivisa con Claude Code. Segui questo, applicando la tabella 'Adattamento sandbox' della skill."
     },
     "clustering_rules_doc": {
-      "repo": "webanalytics-filoblu/claude-clustering-agent",
+      "repo": "webanalytics-filoblu/public-claude-clustering-agent",
       "branch": "main",
       "path": "CLAUDE.md",
       "why": "Tabella di regole con cui clusterizzi A MANO i batch nello Step 4 (--mode process-batches). Obbligatorio: senza, quello step non e' eseguibile correttamente."
@@ -38,8 +40,8 @@
 
   "fetch_to_sandbox": [
     {
-      "repo": "webanalytics-filoblu/claude-report-search-intent",
-      "branch": "feature-only-mcp",
+      "repo": "webanalytics-filoblu/public-claude-report-search-intent",
+      "branch": "main",
       "dest": "work/",
       "files": [
         "scripts/run_meta.py",
@@ -52,16 +54,16 @@
       "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Nessuno script di questa lista fa più chiamate Google dirette (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, le operazioni Drive le fa Claude via MCP direttamente in conversazione, vedi playbook Step 1/2a/5/6)."
     },
     {
-      "repo": "webanalytics-filoblu/claude-clustering-agent",
+      "repo": "webanalytics-filoblu/public-claude-clustering-agent",
       "branch": "main",
       "dest": "work/",
       "files": [
         "scripts/cluster.py"
       ],
-      "_comment": "NIENTE piu' 'dirs: [rules]' qui: rules/ e' in .gitignore in quel repo dal commit 'google sheet rules v1', quindi non esiste su GitHub (un fetch continuerebbe a fallire 404 su qualunque branch). Il ruleset vive ora negli Sheet Google Drive descritti in clustering_rules_drive qui sotto e in read_in_context.clustering_rules_doc: va sincronizzato per-sessione con 'python work/scripts/cluster.py --mode sync-rules --workdir work/runs/<slug>/clustering/workdir', seguendo la sezione 'Sincronizza da Google Drive' del CLAUDE.md di quel repo (usa il connettore Drive download_file_content, MAI curl: l'host di redirect di Drive e' bloccato in modo permanente in questo sandbox)."
+      "_comment": "NIENTE piu' 'dirs: [rules]' qui: rules/ e' in .gitignore in quel repo dal commit 'google sheet rules v1', quindi non esiste su GitHub (un fetch continuerebbe a fallire 404 su qualunque branch). Il ruleset vive ora negli Sheet Google Drive descritti in clustering_rules_drive qui sotto e in read_in_context.clustering_rules_doc: va sincronizzato per-sessione con 'python work/scripts/cluster.py --mode sync-rules --workdir work/runs/<slug>/clustering/workdir', seguendo la sezione 'Sincronizza da Google Drive' del CLAUDE.md di quel repo (usa il tool MCP Google Drive download_file_content, MAI curl: l'host di redirect di Drive e' bloccato in modo permanente in questo sandbox)."
     },
     {
-      "repo": "webanalytics-filoblu/app-script-semrush-keyword-cleaner",
+      "repo": "webanalytics-filoblu/public-claude-semrush-keyword-cleaner",
       "branch": "main",
       "dest": "work/",
       "files": [
@@ -71,10 +73,10 @@
   ],
 
   "clustering_rules_drive": {
-    "_comment": "Sostituisce la vecchia dir 'rules/' di claude-clustering-agent (non piu' committata, vedi commento sopra). Cartella Drive condivisa 'chiunque abbia il link' (sola lettura) contenente una sottocartella per vertical + un Google Sheet per lingua, piu' Brands/Cities/_Attributi condivisi.",
+    "_comment": "Sostituisce la vecchia dir 'rules/' di public-claude-clustering-agent (non piu' committata, vedi commento sopra). Cartella Drive condivisa 'chiunque abbia il link' (sola lettura) contenente una sottocartella per vertical + un Google Sheet per lingua, piu' Brands/Cities/_Attributi condivisi.",
     "folder_id": "1sBd0k1QSc23E_5ii6Nc1DtZ0oD1GjusS",
     "folder_name": "Clustering rules",
-    "why": "Allo Step 4 del playbook canonico, prima di '--mode prepare', elenca le sottocartelle reali sotto questo folder_id (search_files, escludendo il prefisso '_') per far scegliere il vertical all'utente, poi sincronizza gli Sheet di quel vertical/lingua con '--mode sync-rules' — dettagli esatti (naming Sheet, formato compresso, staging sheets_raw/) nel CLAUDE.md di claude-clustering-agent letto in read_in_context, non duplicati qui."
+    "why": "Allo Step 4 del playbook canonico, prima di '--mode prepare', elenca le sottocartelle reali sotto questo folder_id (search_files, escludendo il prefisso '_') per far scegliere il vertical all'utente, poi sincronizza gli Sheet di quel vertical/lingua con '--mode sync-rules' — dettagli esatti (naming Sheet, formato compresso, staging sheets_raw/) nel CLAUDE.md di public-claude-clustering-agent letto in read_in_context, non duplicati qui."
   },
 
   "pip_packages": [
@@ -86,20 +88,17 @@
 
   "expected_config_keys": {
     "_comment": [
-      "Nessuna credenziale Google da gestire in questo flusso: niente OAuth Google. Le chiavi",
-      "GOOGLE_* sotto sono riferimenti STATICI (ID di file/cartella Drive, non segreti) che",
-      "restano nel .env locale o si leggono da qui:",
+      "Nessun segreto da gestire in questo flusso. Niente OAuth Google, niente GITHUB_TOKEN:",
+      "i tre repo coinvolti (questo, public-claude-clustering-agent,",
+      "public-claude-semrush-keyword-cleaner) sono tutti pubblici, quindi 'git clone' (Step",
+      "0a di claude-skill/SKILL.md) non richiede alcuna credenziale.",
+      "",
+      "Le chiavi GOOGLE_* sotto sono riferimenti STATICI (ID di file/cartella Drive, non",
+      "segreti) che restano nel .env locale o si leggono da qui:",
       "",
       "  GOOGLE_DRIVE_ROOT_FOLDER_ID, GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID (facoltativa),",
       "  GOOGLE_SHEET_TEMPLATE_ID, GOOGLE_SLIDE_TEMPLATE_ID,",
       "  GOOGLE_SLIDE_EXAMPLE_ID (facoltativa).",
-      "",
-      "GITHUB_TOKEN e' invece un segreto reale, usato per TUTTO l'accesso a GitHub in questa",
-      "skill: meccanismo primario 'git clone' (token solo nell'URL, mai in header ripetuti),",
-      "definito per intero in claude-skill/SKILL.md Step 0a, con il connettore GitHub come",
-      "fallback se 'git clone' viene bloccato dal sandbox per motivi di sicurezza (in quel",
-      "caso il token non serve: il connettore gestisce la propria autenticazione). Va",
-      "scritto in work/.env, mai riportato in chat/log/riepiloghi (solo presente/assente).",
       "",
       "L'accesso a Drive/Sheets/Slides passa interamente dal tool MCP Google Drive collegato",
       "alla chat (gestisce la propria autenticazione)."
@@ -113,6 +112,6 @@
       "files.pythonhosted.org",
       "github.com"
     ],
-    "_comment_obbligatori": "pypi.org + files.pythonhosted.org servono al pip install (claude-skill/SKILL.md Step 0a: pandas/openpyxl/python-pptx). github.com serve al 'git clone' usato come meccanismo primario per TUTTO l'accesso a GitHub in questa skill (stesso Step 0a: bootstrap.md, manifest, read_in_context, fetch_to_sandbox) - se il sandbox blocca 'git clone' per motivi di sicurezza (non un problema di rete), lo step interessato passa al fallback via connettore GitHub, che non richiede questo host. Non serve invece allowlistare alcun host Google API (oauth2.googleapis.com, *.googleapis.com): tutte le chiamate Drive/Sheets/Slides passano dal tool MCP Google Drive collegato alla chat, non da chiamate HTTP dirette dal code execution del sandbox."
+    "_comment_obbligatori": "pypi.org + files.pythonhosted.org servono al pip install (claude-skill/SKILL.md Step 0a: pandas/openpyxl/python-pptx). github.com serve al 'git clone' usato per TUTTO l'accesso a GitHub in questa skill (stesso Step 0a: bootstrap.md, manifest, read_in_context, fetch_to_sandbox) - se il sandbox blocca 'git clone' per motivi di sicurezza (non un problema di rete), lo step interessato si ferma: non esiste un connettore GitHub in questo workspace da usare come fallback. Non serve invece allowlistare alcun host Google API (oauth2.googleapis.com, *.googleapis.com): tutte le chiamate Drive/Sheets/Slides passano dal tool MCP Google Drive collegato alla chat, non da chiamate HTTP dirette dal code execution del sandbox."
   }
 }

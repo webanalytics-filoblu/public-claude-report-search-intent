@@ -2,8 +2,9 @@
 """
 Step "Fetch dipendenze" della skill report-search-intent (prerequisito, prima di Step 3/4).
 
-Risolve i percorsi locali di claude-clustering-agent e app-script-semrush-keyword-cleaner
-usati rispettivamente da Step 4 (clustering) e Step 3 (pulizia keyword):
+Risolve i percorsi locali di public-claude-clustering-agent e
+public-claude-semrush-keyword-cleaner usati rispettivamente da Step 4 (clustering) e Step 3
+(pulizia keyword):
 
 - Se CLUSTERING_AGENT_PATH / KEYWORD_CLEANER_PATH sono valorizzate nel .env, usa quel
   percorso cosi' com'e' (override locale, utile per testare modifiche non ancora pushate) e
@@ -16,9 +17,7 @@ usati rispettivamente da Step 4 (clustering) e Step 3 (pulizia keyword):
 `.cache/` e' una copia di sola lettura per la skill: non lavorarci dentro a mano, verra'
 sempre riportata allo stato di origin/<branch> al prossimo fetch.
 
-Se il repo e' privato e le credenziali git di questa macchina non bastano (es. ambiente
-headless senza credential manager configurato), imposta GITHUB_TOKEN nel .env: viene
-iniettato nell'URL di clone/fetch solo per questo comando.
+Entrambi i repo sono pubblici: nessuna credenziale/token e' richiesta per clonarli.
 
 Uso:
     python scripts/fetch_dependencies.py
@@ -41,16 +40,16 @@ DEPENDENCIES = {
         "path_env": "CLUSTERING_AGENT_PATH",
         "repo_env": "CLUSTERING_AGENT_REPO",
         "branch_env": "CLUSTERING_AGENT_BRANCH",
-        "default_repo": "https://github.com/webanalytics-filoblu/claude-clustering-agent.git",
-        "cache_dirname": "claude-clustering-agent",
+        "default_repo": "https://github.com/webanalytics-filoblu/public-claude-clustering-agent.git",
+        "cache_dirname": "public-claude-clustering-agent",
         "marker_file": "scripts/cluster.py",
     },
     "keyword_cleaner": {
         "path_env": "KEYWORD_CLEANER_PATH",
         "repo_env": "KEYWORD_CLEANER_REPO",
         "branch_env": "KEYWORD_CLEANER_BRANCH",
-        "default_repo": "https://github.com/webanalytics-filoblu/app-script-semrush-keyword-cleaner.git",
-        "cache_dirname": "app-script-semrush-keyword-cleaner",
+        "default_repo": "https://github.com/webanalytics-filoblu/public-claude-semrush-keyword-cleaner.git",
+        "cache_dirname": "public-claude-semrush-keyword-cleaner",
         "marker_file": "scripts/semrush_cleaner.py",
     },
 }
@@ -66,9 +65,8 @@ def _run(args, cwd=None):
     if result.returncode != 0:
         raise SystemExit(
             f"Comando fallito: {' '.join(args)}\n{result.stderr.strip() or result.stdout.strip()}\n\n"
-            "Se il repo e' privato, verifica le credenziali git di questa macchina "
-            "(git credential manager / `gh auth login`) oppure imposta GITHUB_TOKEN nel "
-            ".env. In alternativa, punta *_PATH a un checkout locale gia' funzionante."
+            "Verifica che questa macchina abbia accesso di rete a github.com, o punta "
+            "*_PATH a un checkout locale gia' funzionante."
         )
     return result.stdout.strip()
 
@@ -79,12 +77,6 @@ def _git_commit(path: Path):
         capture_output=True, text=True,
     )
     return result.stdout.strip() if result.returncode == 0 else None
-
-
-def _inject_token(repo_url: str, token: str) -> str:
-    if token and repo_url.startswith("https://"):
-        return f"https://{token}@{repo_url[len('https://'):]}"
-    return repo_url
 
 
 def resolve_dependency(spec: dict) -> dict:
@@ -101,8 +93,6 @@ def resolve_dependency(spec: dict) -> dict:
 
     repo_url = os.environ.get(spec["repo_env"], spec["default_repo"])
     branch = os.environ.get(spec["branch_env"], "main")
-    token = os.environ.get("GITHUB_TOKEN")
-    clone_url = _inject_token(repo_url, token)
     target = CACHE_DIR / spec["cache_dirname"]
 
     if (target / ".git").exists():
@@ -111,7 +101,7 @@ def resolve_dependency(spec: dict) -> dict:
         _run(["git", "reset", "--quiet", "--hard", f"origin/{branch}"], cwd=str(target))
     else:
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        _run(["git", "clone", "--quiet", "--branch", branch, clone_url, str(target)])
+        _run(["git", "clone", "--quiet", "--branch", branch, repo_url, str(target)])
 
     if not (target / spec["marker_file"]).exists():
         raise SystemExit(
