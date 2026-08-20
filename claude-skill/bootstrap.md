@@ -35,6 +35,15 @@ exportMimeType="text/csv")`, che restituisce il CSV in base64, da scrivere su di
 `--mode sync-rules` lo legge normalmente. Questo è lo stesso identico caso già documentato
 nel `CLAUDE.md` per l'ambiente claude.ai: non è una scorciatoia inventata qui.
 
+Se il file è grande e il risultato del tool viene troncato/redirezionato su un file locale
+per limite di token (stesso sintomo, causa e fix documentati nella "Nota tecnica" dello
+Step 2a del playbook canonico): decodifica il base64 **da quel file salvato**, non
+leggendolo a mano in chunk nel contesto — è lentissimo ed è la causa di un download che
+sembra "bloccarsi" per minuti anche su file di poche decine di KB. Il percorso esatto del
+file salvato dipende dal sandbox (in Claude Code è sotto `~/.claude/projects/...`); se qui
+non trovi un percorso analogo indicato dal tool, segui comunque il principio: mai
+ricostruire base64 a mano nel contesto quando esiste un'alternativa locale.
+
 ## Step 0d — Verifica accesso ai template Drive
 
 Non c'è nessuna autenticazione da verificare (niente OAuth Google, niente refresh token):
