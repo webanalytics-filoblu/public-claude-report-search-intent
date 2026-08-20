@@ -23,32 +23,28 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 2. Il tool MCP Google Drive (`mcp__claude_ai_Google_Drive__*`) deve essere collegato: è
    l'unico canale verso Drive/Sheets/Slides in questo flusso, non esiste più
    un'autenticazione OAuth Google gestita da questo repo (niente `scripts/google_clients.py`,
-   niente `credentials/token.json`, niente refresh token da rinnovare). `.env` in questo
-   repo deve avere solo `GOOGLE_DRIVE_ROOT_FOLDER_ID` (e facoltativamente
-   `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`), `GOOGLE_SHEET_TEMPLATE_ID`,
-   `GOOGLE_SLIDE_TEMPLATE_ID` — riferimenti statici a ID di file/cartella, non credenziali.
-   Se il tool MCP Drive non è disponibile in questa sessione, **fermati** e dillo
-   all'utente: non esiste un fallback verso token/curl per Drive/Sheets/Slides in questo
-   flusso.
-3. `claude-clustering-agent` e `app-script-semrush-keyword-cleaner` (Step 4 e Step 3) non
-   vanno clonati a mano: esegui SEMPRE, come parte di questo Step 0,
+   niente `credentials/token.json`, niente refresh token da rinnovare). Gli ID statici
+   (`GOOGLE_DRIVE_ROOT_FOLDER_ID`, `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID` facoltativa,
+   `GOOGLE_SHEET_TEMPLATE_ID`, `GOOGLE_SLIDE_TEMPLATE_ID`, `GOOGLE_SLIDE_EXAMPLE_ID`
+   facoltativa) sono già committati in `drive_config.json` alla root del repo — non serve
+   compilare un `.env` per questi valori, leggili direttamente da lì. Se il tool MCP Drive
+   non è disponibile in questa sessione, **fermati** e dillo all'utente: non esiste un
+   fallback verso token/curl per Drive/Sheets/Slides in questo flusso.
+3. `public-claude-clustering-agent` e `public-claude-semrush-keyword-cleaner` (Step 4 e Step
+   3) non vanno clonati a mano: esegui SEMPRE, come parte di questo Step 0,
    ```bash
    python scripts/fetch_dependencies.py
    ```
    Clona (la prima volta) o aggiorna (`git fetch` + `reset --hard` sul branch configurato,
-   default `main`) i due repo GitHub in `.cache/` dentro questo progetto, e stampa un JSON
-   con `path` e `commit` risolti per ciascuno — annota questi due path (li userai al posto
-   di `<CLUSTERING_AGENT_PATH>` / `<KEYWORD_CLEANER_PATH>` negli step 3 e 4) e i due commit
-   (li riporterai nel riepilogo di Step 7, utile per sapere quale versione della logica di
-   pulizia/clustering ha girato in questo run). Se `CLUSTERING_AGENT_PATH` /
-   `KEYWORD_CLEANER_PATH` sono valorizzate nel `.env`, lo script le usa cosi' come sono
-   (override locale per testare modifiche non ancora pushate) senza toccare git. Se il
-   comando fallisce per un repo privato senza credenziali git configurate su questa
-   macchina, configura le credenziali git di questa macchina (credential manager / `gh auth
-   login`) — non serve `GITHUB_TOKEN` nel `.env` per questo scenario (vedi variante
-   claude.ai in `claude-skill/bootstrap.md`, che usa `git clone` con token nell'URL, o il
-   connettore GitHub come fallback, per lo stesso scopo).
-4. `GOOGLE_SLIDE_EXAMPLE_ID` in `.env` (facoltativo ma consigliato) è una presentazione di
+   default `main`) i due repo GitHub pubblici in `.cache/` dentro questo progetto (nessuna
+   credenziale richiesta), e stampa un JSON con `path` e `commit` risolti per ciascuno —
+   annota questi due path (li userai al posto di `<CLUSTERING_AGENT_PATH>` /
+   `<KEYWORD_CLEANER_PATH>` negli step 3 e 4) e i due commit (li riporterai nel riepilogo di
+   Step 7, utile per sapere quale versione della logica di pulizia/clustering ha girato in
+   questo run). Se `CLUSTERING_AGENT_PATH` / `KEYWORD_CLEANER_PATH` sono valorizzate nel
+   `.env`, lo script le usa cosi' come sono (override locale per testare modifiche non
+   ancora pushate) senza toccare git.
+4. `GOOGLE_SLIDE_EXAMPLE_ID` in `drive_config.json` (facoltativo ma consigliato) è una presentazione di
    riferimento già compilata (tono/stile editoriale reale) — la leggi in sola lettura in
    Step 6 con `mcp__claude_ai_Google_Drive__read_file_content`, non va mai duplicata né
    modificata.
@@ -69,7 +65,7 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 - **Dominio del brand**: Chiedi o conferma il dominio associato al brand (es. `yamamay.com`). Non blocca lo Step 1 (`run_meta.py init` accetta `--domain` vuoto): chiedilo/confermalo **dopo** aver creato la cartella del run, e appena noto aggiornalo con `python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key domain --value "<dominio>"` — serve prima dello Step 2b/3.
 - **Mercato/database Semrush**: se il TLD del dominio è inequivoco (`.it`→`it`, `.fr`→`fr`, `.de`→`de`, `.es`→`es`, `.co.uk`→`uk`) usalo. Se il dominio è generico (`.com`) e non è ovvio dal contesto della conversazione, **chiedi**: *"Su quale mercato/database Semrush devo lavorare (es. it, us, uk)?"*
 - **Varianti del brand secco**: parti dal nome brand ripulito (lowercase, es. `yamamay`). Se conosci typo/varianti ricorrenti chiedile all'utente, altrimenti procedi con la sola variante principale (potrai raffinare dopo aver visto `output/rules_suggestions.json` del clustering).
-- **Settore** (per il clustering, Step 4): se non è deducibile con certezza dal brand/URL (es. un e-commerce moda è ovvio, un dominio generico o multi-categoria no), **chiedi**: *"Per quale settore sono queste keyword?"* — stessa domanda del `CLAUDE.md` di `claude-clustering-agent` quando il settore non è chiaro. Usi il valore raccolto qui in `--sector` allo Step 4, non un valore di comodo.
+- **Settore** (per il clustering, Step 4): se non è deducibile con certezza dal brand/URL (es. un e-commerce moda è ovvio, un dominio generico o multi-categoria no), **chiedi**: *"Per quale settore sono queste keyword?"* — stessa domanda del `CLAUDE.md` di `public-claude-clustering-agent` quando il settore non è chiaro. Usi il valore raccolto qui in `--sector` allo Step 4, non un valore di comodo.
 
 ## Step 1 — Setup cartelle Drive + copie dei template
 
@@ -126,7 +122,7 @@ Prima di aspettare i file, indica chiaramente all'utente cosa esportare per cias
 atteso (mese, mercato/database, ed eventuale filtro: Brand = keyword che contengono
 `<variante brand>`, Not Brand = keyword che non la contengono). Se il periodo copre più
 mesi, l'utente dovrà ripetere l'export per ogni mese (stesso numero di CSV per mese): la
-deduplica/consolidamento in Step 3 (a carico di `app-script-semrush-keyword-cleaner`)
+deduplica/consolidamento in Step 3 (a carico di `public-claude-semrush-keyword-cleaner`)
 gestisce le sovrapposizioni fra mesi, non serve concatenare nulla a mano.
 
 Quando l'utente allega un CSV in chat (oppure tenta di caricarlo direttamente):
@@ -159,7 +155,7 @@ Ottieni così **esattamente 3 numeri** (uno per anno). Scrivi
 (`build_sheet.py` lo richiede rigidamente) — è l'input del Tab "brand-secco" (Step 5), che
 scriverà anche le formule Sheets per le variazioni % YoY (non calcolarle tu).
 
-## Step 3 — Pulizia (app-script-semrush-keyword-cleaner)
+## Step 3 — Pulizia (public-claude-semrush-keyword-cleaner)
 
 Richiami direttamente `scripts/semrush_cleaner.py` **di quel repo** (path risolto da
 `fetch_dependencies.py` in Step 0, `keyword_cleaner.path` — stesso script dietro il comando
@@ -193,13 +189,13 @@ python scripts/xlsx_to_clean_csv.py \
   --brand "Yamamay"
 ```
 Legge il foglio "Tutti i Dati", aggiunge `Brand` (valore fisso, dal nome brand) e
-`Country` (bucket lingua per `<mercato>`, usato dalle regole di claude-clustering-agent) e
+`Country` (bucket lingua per `<mercato>`, usato dalle regole di public-claude-clustering-agent) e
 scrive `runs/<slug>/clean/all_clean.csv` — è l'input del clustering.
 
-## Step 4 — Clustering (claude-clustering-agent)
+## Step 4 — Clustering (public-claude-clustering-agent)
 
 Usa il path risolto da `fetch_dependencies.py` in Step 0 (`clustering_agent.path`, di
-default `.cache/claude-clustering-agent/`): richiami direttamente `scripts/cluster.py`
+default `.cache/public-claude-clustering-agent/`): richiami direttamente `scripts/cluster.py`
 **di quel repo**, passando come `--input/--output/--workdir` i percorsi di **questo** run.
 
 **Il ruleset non è più committato in quel repo** (`rules/` è in `.gitignore` lì, quindi
@@ -243,7 +239,7 @@ python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode add-rules \
 python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode process-batches \
   --workdir runs/<slug>/clustering/workdir
 # per ogni batch: leggi il prompt in workdir/prompts/, clusterizza TU le keyword secondo
-# la tabella di regole del CLAUDE.md di claude-clustering-agent, scrivi il JSON in
+# la tabella di regole del CLAUDE.md di public-claude-clustering-agent, scrivi il JSON in
 # workdir/results/
 
 python "<CLUSTERING_AGENT_PATH>/scripts/cluster.py" --mode merge \
@@ -325,7 +321,7 @@ via MCP, che lo converte automaticamente in Google Sheet.
    tab "brand-secco" (3 colonne Volume anno/anno-1/anno-2 + riga di formule Excel YoY), il tab
    "clusters" (le 8 colonne fisse del template — `--clustered-csv` deve averle tutte,
    altrimenti lo script si ferma con errore esplicito — dato grezzo **completo**, non
-   filtrato dal piano di Step 4bis; le colonne attributo dinamiche di claude-clustering-agent
+   filtrato dal piano di Step 4bis; le colonne attributo dinamiche di public-claude-clustering-agent
    seguono senza un elenco fisso: vedi `attribute_columns_after_sotto_cluster` in
    `build_sheet_xlsx.py`), un tab "cluster-overview" con un'**aggregazione statica** (pandas
    groupby, non più una PivotTable nativa di Sheets) sulla selezione di `cluster_plan.json` +
@@ -549,7 +545,7 @@ questo run).
 ## Limiti noti
 
 - Il ruleset di clustering vive in Google Sheet su Drive, non più in file committati in
-  `claude-clustering-agent` (vedi Step 4). `--mode add-rules` scrive solo nella copia
+  `public-claude-clustering-agent` (vedi Step 4). `--mode add-rules` scrive solo nella copia
   effimera `runs/<slug>/clustering/workdir/rules/`, valida per il resto di **questo** run:
   per renderle permanenti per tutto il team va incollato a mano nello Sheet Drive giusto il
   blocco che lo script produce (`paste_rules_<vertical>_<lingua>.txt`, sezione "Proponi

@@ -88,7 +88,7 @@ HEADER_FONT = Font(bold=True, color="FFFFFF")
 
 
 def attribute_columns_after_sotto_cluster(raw_columns) -> list[str]:
-    """Colonne attributo dinamiche prodotte da claude-clustering-agent (Stagionalità, Genere,
+    """Colonne attributo dinamiche prodotte da public-claude-clustering-agent (Stagionalità, Genere,
     Brand correlati, ed eventuali nuove colonne future) — non una lista di nomi fissa nel
     codice, ma tutto cio' che nel CSV GREZZO (prima del riordino di reorder_clusters_columns)
     segue "Sotto Cluster". Stessa logica di build_sheet.py, invariata."""
@@ -229,7 +229,7 @@ def main():
                          help="Percorso locale del Google Sheet template esportato in xlsx "
                               "(scaricato da Claude via mcp__claude_ai_Google_Drive__download_file_content)")
     parser.add_argument("--volumes-csv", required=True, help="CSV con colonne Anno,Search Volume (ultimi 3 anni, stesso periodo)")
-    parser.add_argument("--clustered-csv", required=True, help="CSV finale di claude-clustering-agent")
+    parser.add_argument("--clustered-csv", required=True, help="CSV finale di public-claude-clustering-agent")
     parser.add_argument("--xlsx-out", required=True, help="Percorso del report .xlsx generato")
     parser.add_argument("--charts-meta-out", required=True)
     parser.add_argument("--cluster-plan",

@@ -1,0 +1,15 @@
+{
+  "_comment": "ID statici di cartelle/file Google Drive usati dalla skill report-search-intent (playbook .claude/skills/claude_code/SKILL.md e loader claude.ai claude-skill/SKILL.md). Non sono segreti: sono solo ID di file/cartella Drive, non credenziali. Il canale reale verso Drive resta sempre il tool MCP Google Drive collegato alla sessione, che gestisce la propria autenticazione — questi ID da soli non danno accesso a nessuno che non abbia gia' un tool MCP Drive con i permessi giusti. Su Claude Code e' un file locale nel checkout; su claude.ai e' letto in Step 0a di claude-skill/SKILL.md (read_in_context del manifest).",
+
+  "GOOGLE_DRIVE_ROOT_FOLDER_ID": "1nmzZYrSzsYFXY1GVUtTh81zA5uHv-yrI",
+  "_comment_root": "Cartella radice sotto cui vivono le cartelle <Brand>/ (Step 1 del playbook), se GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID non e' impostata.",
+
+  "GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID": "1I0IrfCXfmzM1MLGn7yuI3WE7S0CCCBOb",
+  "_comment_brand_root": "Facoltativa: se impostata, le cartelle <Brand>/ vengono create qui sotto invece che sotto GOOGLE_DRIVE_ROOT_FOLDER_ID. Non e' l'ID della cartella di un brand specifico (quello, brand_folder_id, viene sempre cercato/creato dinamicamente ad ogni run e scritto in runs/<slug>/run_meta.json).",
+
+  "GOOGLE_SHEET_TEMPLATE_ID": "141oF2SQlESD_YwHdmnlfATDeGeNonti6O75PlxHhPFk",
+  "GOOGLE_SLIDE_TEMPLATE_ID": "1wHC-_BIEX1_Wji1n8Y166j0_m3MH49SXVZ1GuIldqh8",
+
+  "GOOGLE_SLIDE_EXAMPLE_ID": "1O9Hmnf0CR5cZQn4HLFPtyFXbeubIINnVk9Osu4A7c8w",
+  "_comment_example": "Facoltativa: presentazione di riferimento gia' compilata (tono/stile editoriale), letta in sola lettura allo Step 6 del playbook. Mai duplicata ne' modificata."
+}

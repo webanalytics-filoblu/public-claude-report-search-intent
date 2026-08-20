@@ -6,7 +6,7 @@ credentials/
 # Runtime output (per-run data, contains client keyword data)
 runs/
 
-# Copie GitHub di claude-clustering-agent / app-script-semrush-keyword-cleaner
+# Copie GitHub di public-claude-clustering-agent / public-claude-semrush-keyword-cleaner
 # (scaricate automaticamente da scripts/fetch_dependencies.py, non versionarle qui)
 .cache/
 

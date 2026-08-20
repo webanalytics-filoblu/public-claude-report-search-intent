@@ -16,7 +16,7 @@ gestita da questo repo, nessun refresh token da rinnovare.
 
 ## Step 0c — Regole di clustering: da Google Drive, non da GitHub
 
-Il ruleset di `claude-clustering-agent` (cluster/sotto-cluster, brand correlati, attributi)
+Il ruleset di `public-claude-clustering-agent` (cluster/sotto-cluster, brand correlati, attributi)
 **non è più committato in quel repo** — `rules/` è in `.gitignore` lì dal commit "google
 sheet rules v1": un fetch di quella directory via GitHub, con qualunque branch, restituisce
 sempre 404. Vive invece in Google Sheet condivisi su Drive, cartella "Clustering rules"
@@ -45,10 +45,11 @@ mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SLIDE_TEMPLATE_ID>
 ```
 
 Se falliscono (file non trovato o senza permessi), **fermati** e segnalalo — non
-improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_SHEET_TEMPLATE_ID`/
-`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono riferimenti statici (ID di
-file/cartella, non segreti): leggili da `claude-skill/manifest.json` o dal `.env` locale se
-presente — non serve scaricare un JSON di credenziali da nessuna parte.
+improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/
+`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono
+riferimenti statici (ID di file/cartella, non segreti): leggili da `drive_config.json`,
+già letto in Step 0a di `SKILL.md` (`read_in_context.drive_config` del manifest) — non serve
+scaricare un JSON di credenziali né compilare un `.env` per questi valori.
 
 ## Adattamento sandbox — delta rispetto al playbook canonico
 
@@ -73,14 +74,13 @@ giudizio editoriale sulle slide — è nel playbook: non reinterpretarlo qui.
   (`cluster.py --mode add-rules`) e i brand competitor rilevati valgono solo per questo run:
   per renderle permanenti vanno incollate a mano nello Sheet Google Drive giusto (blocco
   prodotto dallo script, sezione "Proponi regole/brand → incolla manuale su Google Sheet"
-  del `CLAUDE.md` di `claude-clustering-agent`) — non un commit su GitHub, il ruleset non
+  del `CLAUDE.md` di `public-claude-clustering-agent`) — non un commit su GitHub, il ruleset non
   vive più lì. Non esiste un flusso di sincronizzazione automatica verso Drive da questa
   skill.
-- **Nessun segreto Google da gestire in questo flusso**: niente OAuth Google, nessun
-  refresh token da rinnovare — l'accesso a Drive/Sheets/Slides passa dal tool MCP Google
-  Drive collegato alla chat. `GITHUB_TOKEN` resta utile per l'accesso a GitHub (meccanismo
-  interamente definito nello Step 0a di `SKILL.md`): governato dalle impostazioni del
-  workspace claude.ai (dove viene scritto in `work/.env`), non da questo repo.
+- **Nessun segreto da gestire in questo flusso**: niente OAuth Google, nessun refresh token
+  da rinnovare — l'accesso a Drive/Sheets/Slides passa dal tool MCP Google Drive collegato
+  alla chat. E niente `GITHUB_TOKEN`: i tre repo GitHub coinvolti sono tutti pubblici, il
+  `git clone` dello Step 0a di `SKILL.md` non richiede alcuna credenziale.
 - **Niente più PivotTable native né grafici "linked"**: xlsx e pptx sono generati offline
   con aggregazioni pre-calcolate e grafici embedded statici (vedi playbook, Step 5/6). Ogni
   run/ricarica crea nuovi file su Drive: non esiste un'operazione MCP di aggiornamento
