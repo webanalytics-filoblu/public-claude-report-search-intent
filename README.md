@@ -73,15 +73,19 @@ com'è e non tocca git.
 
 ### 3. Cartella Drive radice e template
 
-`GOOGLE_DRIVE_ROOT_FOLDER_ID` in `.env` deve essere l'ID di una cartella Drive
-raggiungibile dal tool MCP Google Drive collegato alla sessione (claude.ai) o dal connector
-equivalente in Claude Code. `GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID` sono gli
-ID dei due template esistenti — non serve più duplicarli in anticipo né autorizzarli via
-Picker: Claude li scarica ed esporta in xlsx/pptx al bisogno (Step 5/6 del playbook), come
-qualunque altro file Drive raggiungibile dall'MCP.
+Niente da configurare: i 5 ID sono già committati in [`drive_config.json`](drive_config.json)
+alla root del repo (non sono segreti, solo ID di file/cartella Drive — l'autenticazione
+resta sempre a carico del tool MCP Google Drive collegato alla sessione).
+`GOOGLE_DRIVE_ROOT_FOLDER_ID` è la cartella Drive radice raggiungibile dall'MCP.
+`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID` sono gli ID dei due template esistenti
+— non serve duplicarli in anticipo né autorizzarli via Picker: Claude li scarica ed esporta
+in xlsx/pptx al bisogno (Step 5/6 del playbook). `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`
+(facoltativa) sposta la creazione delle cartelle `<Brand>/` sotto un'altra sottocartella
+invece che sotto la radice. `GOOGLE_SLIDE_EXAMPLE_ID` (facoltativa) è la presentazione di
+riferimento per tono/stile editoriale.
 
-Facoltativo: `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`, se impostata, sposta la creazione delle
-cartelle `<Brand>/` sotto un'altra sottocartella invece che sotto la radice sopra.
+Per puntare a una cartella/template diverso (es. un ambiente di test), modifica
+`drive_config.json` in locale.
 
 ### 4. Ispeziona i template reali e adatta i placeholder
 
@@ -164,7 +168,8 @@ public-claude-report-search-intent/
 ├── .cache/                    ← copie GitHub di public-claude-clustering-agent /
 │                                  public-claude-semrush-keyword-cleaner (gitignored, auto-generate)
 ├── runs/                      ← output per-run (gitignored: dati keyword dei clienti)
-└── .env                        ← ID template Drive + config (gitignored)
+├── drive_config.json          ← ID statici Drive/Sheet/Slide Template (committato, non un segreto)
+└── .env                        ← override locali facoltativi (path/repo/branch dipendenze, gitignored)
 ```
 
 Il caricamento su Drive (cartelle, upload xlsx/pptx) e il download dei template/CSV non

@@ -45,10 +45,11 @@ mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SLIDE_TEMPLATE_ID>
 ```
 
 Se falliscono (file non trovato o senza permessi), **fermati** e segnalalo — non
-improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_SHEET_TEMPLATE_ID`/
-`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono riferimenti statici (ID di
-file/cartella, non segreti): leggili da `claude-skill/manifest.json` o dal `.env` locale se
-presente — non serve scaricare un JSON di credenziali da nessuna parte.
+improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/
+`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono
+riferimenti statici (ID di file/cartella, non segreti): leggili da `drive_config.json`,
+già letto in Step 0a di `SKILL.md` (`read_in_context.drive_config` del manifest) — non serve
+scaricare un JSON di credenziali né compilare un `.env` per questi valori.
 
 ## Adattamento sandbox — delta rispetto al playbook canonico
 

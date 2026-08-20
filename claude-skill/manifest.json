@@ -35,6 +35,12 @@
       "branch": "main",
       "path": "CLAUDE.md",
       "why": "Tabella di regole con cui clusterizzi A MANO i batch nello Step 4 (--mode process-batches). Obbligatorio: senza, quello step non e' eseguibile correttamente."
+    },
+    "drive_config": {
+      "repo": "webanalytics-filoblu/public-claude-report-search-intent",
+      "branch": "main",
+      "path": "drive_config.json",
+      "why": "ID statici di cartelle/template Drive (GOOGLE_DRIVE_ROOT_FOLDER_ID e affini) committati nel repo principale, non piu' un .env da configurare a parte: vedi expected_config_keys sotto."
     }
   },
 
@@ -94,7 +100,8 @@
       "0a di claude-skill/SKILL.md) non richiede alcuna credenziale.",
       "",
       "Le chiavi GOOGLE_* sotto sono riferimenti STATICI (ID di file/cartella Drive, non",
-      "segreti) che restano nel .env locale o si leggono da qui:",
+      "segreti), gia' committati in drive_config.json nel repo principale (vedi",
+      "read_in_context.drive_config sopra) — non serve piu' un .env per queste:",
       "",
       "  GOOGLE_DRIVE_ROOT_FOLDER_ID, GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID (facoltativa),",
       "  GOOGLE_SHEET_TEMPLATE_ID, GOOGLE_SLIDE_TEMPLATE_ID,",

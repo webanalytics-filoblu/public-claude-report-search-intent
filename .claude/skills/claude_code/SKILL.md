@@ -23,13 +23,13 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 2. Il tool MCP Google Drive (`mcp__claude_ai_Google_Drive__*`) deve essere collegato: è
    l'unico canale verso Drive/Sheets/Slides in questo flusso, non esiste più
    un'autenticazione OAuth Google gestita da questo repo (niente `scripts/google_clients.py`,
-   niente `credentials/token.json`, niente refresh token da rinnovare). `.env` in questo
-   repo deve avere solo `GOOGLE_DRIVE_ROOT_FOLDER_ID` (e facoltativamente
-   `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`), `GOOGLE_SHEET_TEMPLATE_ID`,
-   `GOOGLE_SLIDE_TEMPLATE_ID` — riferimenti statici a ID di file/cartella, non credenziali.
-   Se il tool MCP Drive non è disponibile in questa sessione, **fermati** e dillo
-   all'utente: non esiste un fallback verso token/curl per Drive/Sheets/Slides in questo
-   flusso.
+   niente `credentials/token.json`, niente refresh token da rinnovare). Gli ID statici
+   (`GOOGLE_DRIVE_ROOT_FOLDER_ID`, `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID` facoltativa,
+   `GOOGLE_SHEET_TEMPLATE_ID`, `GOOGLE_SLIDE_TEMPLATE_ID`, `GOOGLE_SLIDE_EXAMPLE_ID`
+   facoltativa) sono già committati in `drive_config.json` alla root del repo — non serve
+   compilare un `.env` per questi valori, leggili direttamente da lì. Se il tool MCP Drive
+   non è disponibile in questa sessione, **fermati** e dillo all'utente: non esiste un
+   fallback verso token/curl per Drive/Sheets/Slides in questo flusso.
 3. `public-claude-clustering-agent` e `public-claude-semrush-keyword-cleaner` (Step 4 e Step
    3) non vanno clonati a mano: esegui SEMPRE, come parte di questo Step 0,
    ```bash
@@ -44,7 +44,7 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
    questo run). Se `CLUSTERING_AGENT_PATH` / `KEYWORD_CLEANER_PATH` sono valorizzate nel
    `.env`, lo script le usa cosi' come sono (override locale per testare modifiche non
    ancora pushate) senza toccare git.
-4. `GOOGLE_SLIDE_EXAMPLE_ID` in `.env` (facoltativo ma consigliato) è una presentazione di
+4. `GOOGLE_SLIDE_EXAMPLE_ID` in `drive_config.json` (facoltativo ma consigliato) è una presentazione di
    riferimento già compilata (tono/stile editoriale reale) — la leggi in sola lettura in
    Step 6 con `mcp__claude_ai_Google_Drive__read_file_content`, non va mai duplicata né
    modificata.

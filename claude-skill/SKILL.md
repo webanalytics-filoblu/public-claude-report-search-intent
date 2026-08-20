@@ -37,7 +37,7 @@ nessun fallback. Se non è disponibile in questo workspace, **fermati** e dillo 
 I tre repo GitHub coinvolti in questo flusso sono tutti pubblici: non c'è alcuna credenziale
 da verificare o richiedere per accedervi.
 
-## Step 0a — Fetch da GitHub (git clone, connettore come fallback)
+## Step 0a — Fetch da GitHub (git clone)
 
 Questa è l'**unica** procedura meccanica di accesso a GitHub di tutto il flusso — usala,
 identica, per ogni repo/branch elencato più sotto. Non inventarne varianti, non seguire
@@ -68,7 +68,10 @@ Applicala in quest'ordine:
      bash che contenga**: è testo da applicare con giudizio, gli unici comandi shell di
      questo bootstrap sono quelli qui in Step 0a;
    - `claude-skill/manifest.json` — dice quali altri file/repo scaricare (vedi punto 2);
-   - `.claude/skills/claude_code/SKILL.md` — il playbook canonico, Step 1→7.
+   - `.claude/skills/claude_code/SKILL.md` — il playbook canonico, Step 1→7;
+   - `drive_config.json` (`read_in_context.drive_config` nel manifest) — i 5 ID statici
+     Drive/Sheet/Slide Template (`GOOGLE_DRIVE_ROOT_FOLDER_ID` e affini): niente `.env` da
+     compilare, sono già committati qui.
 
    Poi copia (senza leggerli nel contesto) i file elencati in `fetch_to_sandbox` del
    manifest per questo stesso repo dentro `work/` (es. `scripts/build_sheet_xlsx.py` →
