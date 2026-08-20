@@ -19,11 +19,6 @@ sempre riportata allo stato di origin/<branch> al prossimo fetch.
 
 Entrambi i repo sono pubblici: nessuna credenziale/token e' richiesta per clonarli.
 
-Per public-claude-clustering-agent, se il repo risolto non ha gia' un clustering-config.json
-(gitignored li', quindi assente in un checkout fresco), lo scrive a partire dal valore
-CLUSTERING_RULES_FOLDER_ID di drive_config.json — cosi' il CLAUDE.md di quel repo non deve
-mai chiederlo all'utente.
-
 Uso:
     python scripts/fetch_dependencies.py
 """
@@ -48,7 +43,6 @@ DEPENDENCIES = {
         "default_repo": "https://github.com/webanalytics-filoblu/public-claude-clustering-agent.git",
         "cache_dirname": "public-claude-clustering-agent",
         "marker_file": "scripts/cluster.py",
-        "seed_config": ("clustering-config.json", "CLUSTERING_RULES_FOLDER_ID", "clustering_rules_folder_id"),
     },
     "keyword_cleaner": {
         "path_env": "KEYWORD_CLEANER_PATH",
@@ -85,20 +79,6 @@ def _git_commit(path: Path):
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def _seed_config(path: Path, filename: str, drive_config_key: str, field: str):
-    """Scrive <path>/<filename> a partire da drive_config.json se non esiste già — solo per
-    dipendenze che se lo aspettano (es. clustering-config.json di public-claude-clustering-agent,
-    gitignored in quel repo: un checkout fresco non lo porta mai)."""
-    target = path / filename
-    if target.exists():
-        return
-    drive_config = json.loads((REPO_ROOT / "drive_config.json").read_text(encoding="utf-8"))
-    folder_id = drive_config.get(drive_config_key)
-    if not folder_id:
-        return
-    target.write_text(json.dumps({field: folder_id}, indent=2) + "\n", encoding="utf-8")
-
-
 def resolve_dependency(spec: dict) -> dict:
     explicit_path = os.environ.get(spec["path_env"])
     if explicit_path:
@@ -109,8 +89,6 @@ def resolve_dependency(spec: dict) -> dict:
             raise SystemExit(
                 f"{spec['path_env']}={path} non contiene {spec['marker_file']} — controlla il percorso."
             )
-        if spec.get("seed_config"):
-            _seed_config(path, *spec["seed_config"])
         return {"path": str(path), "source": "override locale (.env)", "commit": _git_commit(path)}
 
     repo_url = os.environ.get(spec["repo_env"], spec["default_repo"])
@@ -130,8 +108,6 @@ def resolve_dependency(spec: dict) -> dict:
             f"Clonato {repo_url} (branch {branch}) ma manca {spec['marker_file']} — "
             "repo o branch sbagliati?"
         )
-    if spec.get("seed_config"):
-        _seed_config(target, *spec["seed_config"])
     return {"path": str(target), "source": f"git ({branch})", "commit": _git_commit(target)}
 
 

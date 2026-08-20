@@ -84,16 +84,10 @@ Applicala in quest'ordine:
    `public-claude-semrush-keyword-cleaner`): per ciascun `{repo, branch}` distinto non ancora
    clonato, ripeti esattamente lo stesso `fetch_repo` + `cat` (per `read_in_context`, es. il
    `CLAUDE.md` delle regole di clustering) + copia (per `fetch_to_sandbox`, es.
-   `scripts/cluster.py`, `scripts/semrush_cleaner.py`) + rimozione del checkout temporaneo.
+   `scripts/cluster.py`, `scripts/semrush_cleaner.py`, `clustering-config.json`) +
+   rimozione del checkout temporaneo.
 
-3. **Seed config** (`seed_configs` nel manifest, oggi una sola voce): per ciascuna entry, se
-   `work/<path>` non esiste già, scrivilo con `{"<field>": "<valore di drive_config_key
-   letto da drive_config.json>"}` — evita che il `CLAUDE.md` di quel repo (già letto per
-   intero allo Step 4 del playbook) chieda quel valore all'utente, dato che il file è
-   gitignored in quel repo e un checkout fresco non lo porta mai. Non sovrascrivere un file
-   già presente.
-
-4. **Dipendenze Python**: installa i pacchetti elencati in `pip_packages` del manifest
+3. **Dipendenze Python**: installa i pacchetti elencati in `pip_packages` del manifest
    (`pip install pandas>=2.0 openpyxl>=3.1 python-pptx>=0.6.23 python-dotenv>=1.0` o
    equivalente lettura dal manifest).
 

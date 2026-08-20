@@ -43,11 +43,10 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
    Step 7, utile per sapere quale versione della logica di pulizia/clustering ha girato in
    questo run). Se `CLUSTERING_AGENT_PATH` / `KEYWORD_CLEANER_PATH` sono valorizzate nel
    `.env`, lo script le usa cosi' come sono (override locale per testare modifiche non
-   ancora pushate) senza toccare git. Scrive anche (se non esiste già)
-   `<CLUSTERING_AGENT_PATH>/clustering-config.json` a partire da
-   `CLUSTERING_RULES_FOLDER_ID` di `drive_config.json` — quel repo lo vorrebbe alla propria
-   radice per non richiedere l'ID della cartella Drive "Clustering rules" all'utente (è
-   gitignored lì, un checkout fresco non lo porta mai): non serve occuparsene allo Step 4.
+   ancora pushate) senza toccare git. `<CLUSTERING_AGENT_PATH>/clustering-config.json`
+   (l'ID della cartella Drive "Clustering rules" richiesto dal `CLAUDE.md` di quel repo)
+   arriva già clonato: è committato in git in `public-claude-clustering-agent`, non serve
+   più generarlo qui.
 4. `GOOGLE_SLIDE_EXAMPLE_ID` in `drive_config.json` (facoltativo ma consigliato) è una presentazione di
    riferimento già compilata (tono/stile editoriale reale) — la leggi in sola lettura in
    Step 6 con `mcp__claude_ai_Google_Drive__read_file_content`, non va mai duplicata né

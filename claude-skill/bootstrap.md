@@ -20,10 +20,10 @@ Il ruleset di `public-claude-clustering-agent` (cluster/sotto-cluster, brand cor
 **non è più committato in quel repo** — `rules/` è in `.gitignore` lì dal commit "google
 sheet rules v1": un fetch di quella directory via GitHub, con qualunque branch, restituisce
 sempre 404. Vive invece in Google Sheet condivisi su Drive, cartella "Clustering rules" (id
-in `CLUSTERING_RULES_FOLDER_ID` di `drive_config.json`, già letto allo Step 0a di
-`SKILL.md` — lo stesso valore che lo Step 0a scrive in `work/clustering-config.json` via
-`seed_configs`, così il `CLAUDE.md` di quel repo non lo richiede all'utente) — dettagli e
-formato in `clustering_rules_doc` (già letto allo Step 0a di `SKILL.md`).
+in `work/clustering-config.json`, copiato al pari di `scripts/cluster.py` allo Step 0a di
+`SKILL.md` — committato in git in quel repo: la cartella non è più condivisa "chiunque
+abbia il link", quindi l'ID da solo non è più un segreto) — dettagli e formato in
+`clustering_rules_doc` (già letto allo Step 0a di `SKILL.md`).
 
 Non c'è nulla da scaricare qui: il vertical dipende dal brand, che non è ancora noto a
 questo punto del bootstrap. La sincronizzazione va fatta più avanti, nello Step 4 del

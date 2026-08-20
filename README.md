@@ -209,11 +209,11 @@ script.
   (`input/`/`output/` di quei repo → `runs/<slug>/...` di questo run) e un paio di eccezioni
   esplicite (brand/settore già raccolti a monte, `--tipo-query tutte` fisso). Se quei due
   progetti cambiano il proprio flusso (nuove modalità, step aggiuntivi), questo repo resta
-  allineato automaticamente, senza bisogno di aggiornare `SKILL.md`. Unica eccezione
-  meccanica: `public-claude-clustering-agent` si aspetta un `clustering-config.json` (non
-  committato lì) con l'ID della cartella Drive "Clustering rules" — `fetch_dependencies.py`
-  lo scrive da solo (se assente) leggendo `CLUSTERING_RULES_FOLDER_ID` da
-  `drive_config.json`, così il suo `CLAUDE.md` non lo richiede mai all'utente. Lo script di
+  allineato automaticamente, senza bisogno di aggiornare `SKILL.md`. `clustering-config.json`
+  (l'ID della cartella Drive "Clustering rules" richiesto dal `CLAUDE.md` del clustering)
+  arriva già clonato da `public-claude-clustering-agent`: è committato in quel repo (la
+  cartella non è più condivisa "chiunque abbia il link", quindi l'ID non è più un segreto),
+  non serve generarlo qui. Lo script di
   pulizia produce un `.xlsx` multi-foglio (pensato per revisione umana); `SKILL.md` lo
   converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne `Brand`/`Country`) che il
   clustering si aspetta.
