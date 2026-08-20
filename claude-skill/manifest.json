@@ -66,7 +66,7 @@
       "files": [
         "scripts/cluster.py"
       ],
-      "_comment": "NIENTE piu' 'dirs: [rules]' qui: rules/ e' in .gitignore in quel repo dal commit 'google sheet rules v1', quindi non esiste su GitHub (un fetch continuerebbe a fallire 404 su qualunque branch). Il ruleset vive ora negli Sheet Google Drive descritti in clustering_rules_drive qui sotto e in read_in_context.clustering_rules_doc: va sincronizzato per-sessione con 'python work/scripts/cluster.py --mode sync-rules --workdir work/runs/<slug>/clustering/workdir', seguendo la sezione 'Sincronizza da Google Drive' del CLAUDE.md di quel repo (usa il tool MCP Google Drive download_file_content, MAI curl: l'host di redirect di Drive e' bloccato in modo permanente in questo sandbox)."
+      "_comment": "NIENTE piu' 'dirs: [rules]' qui: rules/ e' in .gitignore in quel repo dal commit 'google sheet rules v1', quindi non esiste su GitHub (un fetch continuerebbe a fallire 404 su qualunque branch). Il ruleset vive ora negli Sheet Google Drive descritti in read_in_context.clustering_rules_doc: va sincronizzato per-sessione con 'python work/scripts/cluster.py --mode sync-rules --workdir work/runs/<slug>/clustering/workdir', seguendo la sezione 'Sincronizza da Google Drive' del CLAUDE.md di quel repo (usa il tool MCP Google Drive download_file_content, MAI curl: l'host di redirect di Drive e' bloccato in modo permanente in questo sandbox). Vedi anche seed_configs sotto: quel CLAUDE.md si aspetta un clustering-config.json alla radice del repo che un checkout fresco non porta mai (gitignored)."
     },
     {
       "repo": "webanalytics-filoblu/public-claude-semrush-keyword-cleaner",
@@ -78,12 +78,15 @@
     }
   ],
 
-  "clustering_rules_drive": {
-    "_comment": "Sostituisce la vecchia dir 'rules/' di public-claude-clustering-agent (non piu' committata, vedi commento sopra). Cartella Drive condivisa 'chiunque abbia il link' (sola lettura) contenente una sottocartella per vertical + un Google Sheet per lingua, piu' Brands/Cities/_Attributi condivisi.",
-    "folder_id": "1sBd0k1QSc23E_5ii6Nc1DtZ0oD1GjusS",
-    "folder_name": "Clustering rules",
-    "why": "Allo Step 4 del playbook canonico, prima di '--mode prepare', elenca le sottocartelle reali sotto questo folder_id (search_files, escludendo il prefisso '_') per far scegliere il vertical all'utente, poi sincronizza gli Sheet di quel vertical/lingua con '--mode sync-rules' — dettagli esatti (naming Sheet, formato compresso, staging sheets_raw/) nel CLAUDE.md di public-claude-clustering-agent letto in read_in_context, non duplicati qui."
-  },
+  "seed_configs": [
+    {
+      "repo": "webanalytics-filoblu/public-claude-clustering-agent",
+      "path": "clustering-config.json",
+      "field": "clustering_rules_folder_id",
+      "drive_config_key": "CLUSTERING_RULES_FOLDER_ID",
+      "why": "public-claude-clustering-agent (il cui CLAUDE.md e' seguito integralmente allo Step 4 del playbook) si aspetta questo file alla propria radice per conoscere l'ID della cartella Drive 'Clustering rules' senza chiederlo all'utente — e' gitignored in quel repo, quindi un checkout fresco non lo porta mai. Scrivilo SOLO se non esiste gia' (equivalente a work/<path>, vedi tabella percorsi di bootstrap.md), leggendo il valore di drive_config_key da drive_config.json (read_in_context.drive_config) — stesso automatismo di scripts/fetch_dependencies.py su Claude Code."
+    }
+  ],
 
   "pip_packages": [
     "pandas>=2.0",

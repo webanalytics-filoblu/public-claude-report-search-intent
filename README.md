@@ -197,23 +197,23 @@ script.
   "linked"). Il testo editoriale per-cluster (titolo, esempi di keyword, paragrafo di
   insight) lo scrive Claude stesso, guardando i dati reali, ma ora **prima** di generare
   il pptx (non più in un secondo giro su slide già duplicate) — vedi `SKILL.md`, Step 6b.
-- **Clustering**: `fetch_dependencies.py` clona/aggiorna `public-claude-clustering-agent` da
-  GitHub in `.cache/` (git clone/pull, non l'API Contents del `claude-skill/SKILL.md`
-  di quel repo — pensato per girare su claude.ai senza filesystem persistente; qui invece
-  giriamo su Claude Code con git disponibile, quindi un clone locale è più semplice; il repo
-  è pubblico, nessun token richiesto). `SKILL.md` invoca poi direttamente
-  `scripts/cluster.py` di quella copia, seguendo **tutti** i passaggi del `CLAUDE.md` di
-  quel repo (non solo prepare/analyze/process-batches/merge): anche `--mode add-brands`
-  concreto sui brand competitor rilevati (con relativo `paste_brands.txt` da incollare su
-  Drive) e la tabella di riepilogo finale dopo ogni merge.
-- **Pulizia**: stesso principio — `fetch_dependencies.py` clona/aggiorna
-  `public-claude-semrush-keyword-cleaner`, e `SKILL.md` invoca direttamente
-  `scripts/semrush_cleaner.py` di quella copia (nessun porting/duplicazione della logica
-  in questo repo), seguendo **tutti** i passaggi del comando `/pulisci-keyword` di quel
-  progetto nello stesso ordine (non solo `--mode clean`): `detect-brand` per confermare il
-  brand rilevato dai nomi file, `detect-varianti` per confermare/correggere le
-  varianti/misspelling prima di pulire, la tabella di riepilogo pulizia, e
-  `find-missing-brands` come verifica opzionale aggiuntiva. Lo script produce un `.xlsx`
-  multi-foglio (pensato per revisione umana); `SKILL.md` lo converte con
-  `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne
-  `Brand`/`Country`) che il clustering si aspetta.
+- **Clustering e Pulizia — nessuna procedura duplicata qui**: `fetch_dependencies.py` clona/
+  aggiorna `public-claude-clustering-agent` e `public-claude-semrush-keyword-cleaner` da
+  GitHub in `.cache/` (git clone/pull, non l'API Contents del `claude-skill/SKILL.md` di
+  quei repo — pensato per girare su claude.ai senza filesystem persistente; qui invece
+  giriamo su Claude Code con git disponibile, quindi un clone locale è più semplice; i repo
+  sono pubblici, nessun token richiesto). `SKILL.md` (Step 3/4) non trascrive i passaggi di
+  quei progetti: dice a Claude di **leggere integralmente** il comando `/pulisci-keyword`
+  (`.claude/commands/pulisci-keyword.md`) e il `CLAUDE.md` del clustering da quelle copie, e
+  di seguirli per intero — con solo una piccola tabella di equivalenza percorsi
+  (`input/`/`output/` di quei repo → `runs/<slug>/...` di questo run) e un paio di eccezioni
+  esplicite (brand/settore già raccolti a monte, `--tipo-query tutte` fisso). Se quei due
+  progetti cambiano il proprio flusso (nuove modalità, step aggiuntivi), questo repo resta
+  allineato automaticamente, senza bisogno di aggiornare `SKILL.md`. Unica eccezione
+  meccanica: `public-claude-clustering-agent` si aspetta un `clustering-config.json` (non
+  committato lì) con l'ID della cartella Drive "Clustering rules" — `fetch_dependencies.py`
+  lo scrive da solo (se assente) leggendo `CLUSTERING_RULES_FOLDER_ID` da
+  `drive_config.json`, così il suo `CLAUDE.md` non lo richiede mai all'utente. Lo script di
+  pulizia produce un `.xlsx` multi-foglio (pensato per revisione umana); `SKILL.md` lo
+  converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne `Brand`/`Country`) che il
+  clustering si aspetta.

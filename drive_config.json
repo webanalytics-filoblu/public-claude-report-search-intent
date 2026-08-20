@@ -11,5 +11,8 @@
   "GOOGLE_SLIDE_TEMPLATE_ID": "1wHC-_BIEX1_Wji1n8Y166j0_m3MH49SXVZ1GuIldqh8",
 
   "GOOGLE_SLIDE_EXAMPLE_ID": "1O9Hmnf0CR5cZQn4HLFPtyFXbeubIINnVk9Osu4A7c8w",
-  "_comment_example": "Facoltativa: presentazione di riferimento gia' compilata (tono/stile editoriale), letta in sola lettura allo Step 6 del playbook. Mai duplicata ne' modificata."
+  "_comment_example": "Facoltativa: presentazione di riferimento gia' compilata (tono/stile editoriale), letta in sola lettura allo Step 6 del playbook. Mai duplicata ne' modificata.",
+
+  "CLUSTERING_RULES_FOLDER_ID": "1sBd0k1QSc23E_5ii6Nc1DtZ0oD1GjusS",
+  "_comment_clustering_rules": "ID della cartella Drive 'Clustering rules' (condivisa 'chiunque abbia il link'), attesa da public-claude-clustering-agent nel proprio clustering-config.json (chiave clustering_rules_folder_id) — quel repo non la trova da solo in un checkout fresco (il file e' gitignored li'). fetch_dependencies.py (Claude Code) e lo Step 0a di claude-skill/SKILL.md (claude.ai) scrivono questo valore in quel file dopo aver clonato il repo, cosi' il suo CLAUDE.md non lo richiede mai all'utente."
 }
