@@ -135,8 +135,35 @@ Quando l'utente allega un CSV in chat (oppure tenta di caricarlo direttamente):
 1. Spiega all'utente quali file esportare da Semrush e chiedigli di caricarli nella sottocartella `semrush_files/` dentro la cartella del run creata allo Step 1 (link diretto: `semrush_folder_url` da `run_meta.json`). Non serve rinominare i file: l'export standard di Semrush produce già nomi parlanti (dominio, database, filtro, data), sufficienti per il QA manuale allo Step 3.
 2. Una volta che l'utente conferma di aver caricato i file su Drive, scaricali tu stesso via MCP (nessuno script Python intermedio: non c'è più un client Drive autenticato lato script):
    - `mcp__claude_ai_Google_Drive__search_files` con query `parentId = '<semrush_folder_id>' and mimeType = 'text/csv'` per elencare i CSV presenti;
-   - per ciascun risultato, `mcp__claude_ai_Google_Drive__download_file_content(fileId=...)` e scrivi il contenuto (decodificato da base64) in `runs/<slug>/raw/<nome file>.csv` con Write/Bash locale.
+   - per ciascun risultato, `mcp__claude_ai_Google_Drive__download_file_content(fileId=...)` e scrivi il contenuto (decodificato da base64) in `runs/<slug>/raw/<nome file>.csv` con Write/Bash locale — **ma vedi la nota tecnica qui sotto se il risultato del tool è troppo grande**.
 3. Verifica che i file scaricati in `runs/<slug>/raw/` rispettino il formato atteso. Se non ci sono file CSV validi o se mancano le colonne necessarie, segnalalo all'utente.
+
+**Nota tecnica — download che "si blocca" per qualche minuto anche su CSV piccoli (es.
+~100 KB):** `download_file_content` restituisce l'intero file come un'unica stringa
+base64 (circa 1/3 più pesante del file originale). Superata una soglia di token per un
+singolo risultato di tool — che un CSV Semrush anche modesto può raggiungere facilmente —
+l'ambiente salva il risultato su un file locale (in Claude Code, qualcosa come
+`~/.claude/projects/<progetto>/<sessione>/tool-results/<tool>-<timestamp>.txt`, un JSON
+con le chiavi `content` (base64), `id`, `mimeType`, `title`) e propone di leggerlo **in
+chunk sequenziali per riassumerlo**. Quell'istruzione è pensata per l'analisi testuale di
+un documento, non per scrivere un CSV byte-per-byte: seguirla alla lettera significa
+leggere e ricostruire a mano nel contesto del modello centinaia di migliaia di caratteri
+di base64, un'operazione lentissima — è la causa del blocco di qualche minuto anche su
+file piccoli. **Non farlo**: quando il risultato viene redirezionato su file, decodifica
+direttamente da quel file salvato su disco, senza far transitare il base64 nel contesto:
+```bash
+python3 -c "
+import json, base64
+with open('<path del tool-result salvato>') as f:
+    data = json.load(f)
+with open('runs/<slug>/raw/<nome file>.csv', 'wb') as out:
+    out.write(base64.b64decode(data['content']))
+"
+```
+Se invece il risultato rientra nel limite ed è già visibile per intero nella
+conversazione (file piccolissimi), scriverlo con `Write` resta equivalente e va bene.
+Stessa tecnica si applica ai download dei template Sheet/Slide (Step 5 punto 1, Step 6
+`.cache/template/...`), che possono essere anche più pesanti di un CSV Semrush.
 
 L'intera cartella `runs/<slug>/raw/` diventa poi `--input-dir` per lo Step 3. (Nota: non è più necessario lo step di upload dei file grezzi a posteriori, in quanto i file risiedono già su Drive).
 
@@ -283,7 +310,10 @@ via MCP, che lo converte automaticamente in Google Sheet.
      fileId=<GOOGLE_SHEET_TEMPLATE_ID>,
      exportMimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
    ```
-   Scrivi il base64 risultante in `.cache/template/sheet_template.xlsx`.
+   Scrivi il base64 risultante in `.cache/template/sheet_template.xlsx` (template più
+   pesante di un CSV Semrush: se il risultato del tool viene redirezionato su file per
+   limite di token, vedi la nota tecnica in Step 2a — decodifica da quel file, non a mano
+   nel contesto).
 2. Genera l'xlsx del report:
    ```bash
    python scripts/build_sheet_xlsx.py \
@@ -355,7 +385,8 @@ mcp__claude_ai_Google_Drive__download_file_content(
   fileId=<GOOGLE_SLIDE_TEMPLATE_ID>,
   exportMimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation")
 ```
-Scrivi il base64 in `.cache/template/slide_template.pptx`, poi:
+Scrivi il base64 in `.cache/template/slide_template.pptx` (stessa nota tecnica di Step 2a
+se il tool redireziona il risultato su file per limite di token), poi:
 ```bash
 python scripts/inspect_template_pptx.py --pptx .cache/template/slide_template.pptx
 ```
