@@ -202,14 +202,18 @@ script.
   di quel repo — pensato per girare su claude.ai senza filesystem persistente; qui invece
   giriamo su Claude Code con git disponibile, quindi un clone locale è più semplice; il repo
   è pubblico, nessun token richiesto). `SKILL.md` invoca poi direttamente
-  `scripts/cluster.py` di quella copia.
+  `scripts/cluster.py` di quella copia, seguendo **tutti** i passaggi del `CLAUDE.md` di
+  quel repo (non solo prepare/analyze/process-batches/merge): anche `--mode add-brands`
+  concreto sui brand competitor rilevati (con relativo `paste_brands.txt` da incollare su
+  Drive) e la tabella di riepilogo finale dopo ogni merge.
 - **Pulizia**: stesso principio — `fetch_dependencies.py` clona/aggiorna
   `public-claude-semrush-keyword-cleaner`, e `SKILL.md` invoca direttamente
   `scripts/semrush_cleaner.py` di quella copia (nessun porting/duplicazione della logica
-  in questo repo). Prima di pulire (Step 3a), invoca sempre `--mode detect-varianti` sullo
-  stesso script — la funzionalità di ricerca automatica delle varianti/misspelling del
-  brand dietro il comando `/pulisci-keyword` di quel progetto — e fa confermare/correggere
-  la lista all'utente, invece di affidarsi solo alla variante principale o a una lista
-  fornita a mano. Lo script produce un `.xlsx` multi-foglio (pensato per revisione umana);
-  `SKILL.md` lo converte con `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne
+  in questo repo), seguendo **tutti** i passaggi del comando `/pulisci-keyword` di quel
+  progetto nello stesso ordine (non solo `--mode clean`): `detect-brand` per confermare il
+  brand rilevato dai nomi file, `detect-varianti` per confermare/correggere le
+  varianti/misspelling prima di pulire, la tabella di riepilogo pulizia, e
+  `find-missing-brands` come verifica opzionale aggiuntiva. Lo script produce un `.xlsx`
+  multi-foglio (pensato per revisione umana); `SKILL.md` lo converte con
+  `xlsx_to_clean_csv.py` nel CSV piatto (+ colonne
   `Brand`/`Country`) che il clustering si aspetta.
