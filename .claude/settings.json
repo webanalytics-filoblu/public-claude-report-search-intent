@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__google-drive__*"
+    ],
+    "ask": [
+      "mcp__google-drive__deleteItem",
+      "mcp__google-drive__deleteSheet",
+      "mcp__google-drive__deleteRange",
+      "mcp__google-drive__deleteGoogleSlide",
+      "mcp__google-drive__deleteSlideElement",
+      "mcp__google-drive__deleteComment",
+      "mcp__google-drive__removePermission"
+    ]
+  }
+}

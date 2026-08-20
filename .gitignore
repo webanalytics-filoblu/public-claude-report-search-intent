@@ -1,0 +1,16 @@
+# Secrets / credentials
+.env
+credentials/
+*.service-account.json
+
+# Runtime output (per-run data, contains client keyword data)
+runs/
+
+# Copie GitHub di claude-clustering-agent / app-script-semrush-keyword-cleaner
+# (scaricate automaticamente da scripts/fetch_dependencies.py, non versionarle qui)
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
