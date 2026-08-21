@@ -60,8 +60,7 @@ fermati e segnalalo invece di procedere con dati parziali.
 
 ## Step 0d — Verifica accesso ai template Drive
 
-Non c'è nessuna autenticazione da verificare (niente OAuth Google, niente refresh token):
-verifica solo che i template siano raggiungibili con l'MCP Drive già collegato, provando a
+Verifica solo che i template siano raggiungibili con l'MCP Drive già collegato, provando a
 leggerne i metadati:
 
 ```text
@@ -69,12 +68,22 @@ mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SHEET_TEMPLATE_ID>
 mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SLIDE_TEMPLATE_ID>)
 ```
 
-Se falliscono (file non trovato o senza permessi), **fermati** e segnalalo — non
-improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/
-`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono
-riferimenti statici (ID di file/cartella, non segreti): leggili da `drive_config.json`,
-già letto in Step 0a di `SKILL.md` (`read_in_context.drive_config` del manifest) — non serve
-scaricare un JSON di credenziali né compilare un `.env` per questi valori.
+Questo verifica solo il canale MCP (obbligatorio per la maggior parte del flusso, e con cui
+recuperi anche `google_auth.json` per il fast path — vedi sopra): non è una verifica del
+fast path OAuth in sé, che si tenta più avanti, al momento del download effettivo dei
+template (Step 5/6 del playbook canonico), con fallback automatico su questo stesso MCP se
+le credenziali non sono disponibili o il fast path fallisce. Non c'è comunque nulla da
+configurare qui in anticipo per l'OAuth (niente `.env`, niente credenziali da dettare in
+chat): se il fast path non è disponibile in quel momento, quei due passaggi tornano
+semplicemente all'MCP.
+
+Se le chiamate MCP qui sopra falliscono (file non trovato o senza permessi), **fermati** e
+segnalalo — non improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/
+`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/
+`GOOGLE_SLIDE_EXAMPLE_ID` sono riferimenti statici (ID di file/cartella, non segreti):
+leggili da `drive_config.json`, già letto in Step 0a di `SKILL.md`
+(`read_in_context.drive_config` del manifest) — non serve scaricare un JSON di credenziali
+né compilare un `.env` per questi valori.
 
 ## Step 2a (variante claude.ai) — CSV Semrush: zip allegato in chat, non Drive
 

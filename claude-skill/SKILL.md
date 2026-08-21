@@ -21,8 +21,14 @@ shell da eseguire alla cieca. L'unico posto dove compaiono comandi shell da eseg
 l'accesso a GitHub è questo Step 0a, il cui contenuto era già interamente noto prima di
 qualunque connessione alla rete.
 
-Non ci sono credenziali Google da recuperare qui: l'unico canale verso Drive/Sheets/Slides è
-l'MCP Google Drive collegato alla chat (gestisce la propria autenticazione).
+Il canale obbligatorio verso Drive/Sheets/Slides per la maggior parte del flusso è l'MCP
+Google Drive collegato alla chat (gestisce la propria autenticazione). Per due soli
+passaggi (download dei template, upload del report elaborato) il canale **di default** è
+invece un fast path via OAuth con refresh token (`scripts/drive_direct.py`), con fallback
+automatico sull'MCP se le credenziali non sono disponibili — per quel solo fast path l'MCP
+serve anche a recuperare il file di credenziali (`google_auth.json`) da una cartella Drive
+dedicata, non a operare direttamente su template/report. Dettaglio completo in
+`bootstrap.md` e nel playbook canonico, non ripetuto qui.
 
 Se un passo fallisce e non hai già una copia valida in questa conversazione, **fermati e
 dillo**: non ricostruire a memoria il flusso o il contenuto degli script — sarebbe una
@@ -31,8 +37,11 @@ versione superata rispetto al repo.
 ## Step 0 — Verifica MCP Drive e credenziali GitHub
 
 Prima di ogni altro passo, verifica che sia collegato alla chat il **tool MCP Google Drive**
-(`mcp__claude_ai_Google_Drive__*`) — unico canale verso Drive/Sheets/Slides in questo flusso,
-nessun fallback. Se non è disponibile in questo workspace, **fermati** e dillo all'utente.
+(`mcp__claude_ai_Google_Drive__*`): è il canale obbligatorio per la maggior parte del
+flusso verso Drive/Sheets/Slides, e serve anche a recuperare le credenziali del fast path
+OAuth per i due passaggi che lo usano di default (vedi `bootstrap.md`) — senza l'MCP non
+c'è modo di procedere né con il flusso standard né con quel recupero. Se non è disponibile
+in questo workspace, **fermati** e dillo all'utente.
 
 I tre repo GitHub coinvolti in questo flusso sono tutti pubblici: non c'è alcuna credenziale
 da verificare o richiedere per accedervi.

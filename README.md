@@ -144,11 +144,15 @@ pratiche:
   da scaricare (e le `rules/` del clustering sono prese elencando la directory, così una
   lingua nuova non richiede modifiche). La procedura meccanica di fetch invece **va
   ricaricata su claude.ai se cambia** (cambia raramente: è uno schema fisso git-clone/repo).
-- **Nessun segreto in questo flusso**: i tre repo coinvolti (questo,
+- **Nessun segreto obbligatorio in questo flusso**: i tre repo coinvolti (questo,
   `public-claude-clustering-agent`, `public-claude-semrush-keyword-cleaner`) sono tutti
-  pubblici, quindi niente `GITHUB_TOKEN`. Nessun OAuth Google: l'unica cosa da verificare è
-  che il tool MCP Google Drive sia collegato in sessione — nessun JSON di credenziali Google
-  da recuperare, nessun refresh token da rinnovare.
+  pubblici, quindi niente `GITHUB_TOKEN`. Per il flusso standard (la maggior parte degli
+  step) l'unica cosa da verificare è che il tool MCP Google Drive sia collegato in sessione —
+  nessuna credenziale Google da gestire qui. Il fast path di default per template/upload
+  (vedi sopra) usa invece un refresh token OAuth: il relativo `google_auth.json` viene
+  recuperato automaticamente da Claude, tramite lo stesso MCP, da una cartella Drive
+  dedicata (`GOOGLE_AUTH_FOLDER_ID`) quando serve — non gestito né rinnovato da questo
+  repo; se non è disponibile, quei due passaggi tornano semplicemente all'MCP.
 - **Prerequisito non aggirabile**: il sandbox di code execution di claude.ai filtra gli host
   in uscita, quindi un admin del workspace deve allowlistare gli host elencati in
   `required_sandbox_hosts` del manifest (`pypi.org`/`files.pythonhosted.org` per il
