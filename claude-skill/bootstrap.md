@@ -66,6 +66,74 @@ riferimenti statici (ID di file/cartella, non segreti): leggili da `drive_config
 già letto in Step 0a di `SKILL.md` (`read_in_context.drive_config` del manifest) — non serve
 scaricare un JSON di credenziali né compilare un `.env` per questi valori.
 
+## Step 2a (variante claude.ai) — CSV Semrush: zip allegato in chat, non Drive
+
+**Questo sostituisce SOLO l'ingresso dei CSV Semrush dello Step 2a del playbook canonico**
+(il download via Drive/MCP resta invariato per template Sheet/Slide — Step 5/6 — e per
+la sincronizzazione delle regole di clustering — Step 0c). Il motivo: `download_file_content`
+restituisce il file come base64 in un colpo unico, e su claude.ai (a differenza di Claude
+Code) non esiste un redirect automatico su file locale quando il risultato è grande —
+scriverlo a blocchi (Caso B, vedi Step 0c) resta possibile ma diventa impraticabile già
+per un solo mese di export di un brand con volumi medio-alti (già osservato un blocco su
+un CSV di 101KB/135.000 caratteri base64). Un file `.zip` allegato **direttamente in
+chat** invece non è un formato "documento" che l'ambiente tenta di leggere come testo:
+se il sandbox ha esecuzione di codice (confermato in questo flusso: qui gira `pip
+install`, `git clone`), un allegato così finisce tipicamente su un percorso reale del
+filesystem locale, non nel contesto della conversazione — bypassando sia il limite di
+token sia il rischio di troncamento del base64.
+
+**Prima di usare questo canale, verificalo (non assumerlo)**: questa non è un'ipotesi già
+confermata in ogni sessione claude.ai, solo un'analisi ragionata sul comportamento più
+plausibile dato che questo sandbox esegue codice. Dopo che l'utente allega lo zip, cerca
+il file sul filesystem locale (es. `ls /mnt/user-data/uploads/` o il path equivalente di
+questo ambiente) **prima di fare qualunque altra cosa**:
+- **Se lo trovi lì, integro**: procedi con l'estrazione sotto.
+- **Se invece non trovi alcun file** (il contenuto ti è arrivato solo come testo/base64
+  nella conversazione): l'ipotesi non vale in questa sessione. **Fermati** e dillo
+  all'utente, chiedendo di caricare i CSV su Drive e seguire invece il meccanismo Drive
+  del playbook canonico (Step 2a originale, con la "Nota tecnica"/Caso B già documentata)
+  — non tentare di ricostruire lo zip a mano dal testo in chat: stesso identico rischio di
+  troncamento silenzioso già visto con il base64 nudo, un archivio zip corrotto a metà è
+  ancora più difficile da diagnosticare di un CSV troncato.
+
+**Cosa comunicare all'utente prima di aspettare l'allegato**: lo stesso messaggio del
+playbook canonico su cosa esportare da Semrush per ciascun CSV atteso (mese, mercato,
+filtro Brand/Not Brand — vedi "Cosa chiedere SEMPRE"/Step 2a lì), con un'istruzione in
+più: comprimere **tutti** i CSV di quel batch in un unico file `.zip` prima di allegarlo
+in chat (non un CSV nudo allegato direttamente: quello resta bloccato dal "BLOCCO DI
+SICUREZZA" del playbook canonico, che qui vale ancora — l'eccezione è solo per un
+archivio zip). Non aggregare l'intero periodo multi-mese in un solo zip se il periodo è
+lungo o il brand ha volumi alti: preferisci un batch per mese (o per filtro
+Brand/Not Brand), per le stesse ragioni di taglia già viste con Drive — anche questo
+canale ha probabilmente un limite dimensionale non documentato, solo più alto.
+
+**Con il file confermato sul filesystem**:
+1. Verifica l'integrità con il CRC32 interno allo zip, prima di estrarre (non serve
+   conoscere in anticipo la dimensione attesa):
+   ```bash
+   python3 -c "
+import zipfile
+with zipfile.ZipFile('<path del file allegato>') as z:
+    bad = z.testzip()
+    if bad:
+        raise SystemExit(f'CRC non valido per: {bad}')
+    print('OK, CRC validi per', len(z.namelist()), 'file:', z.namelist())
+"
+   ```
+   Se `testzip()` segnala un file corrotto, l'upload è arrivato incompleto: chiedi
+   all'utente di ricaricarlo, non proseguire con un'estrazione parziale.
+2. Estrai tutti i CSV in `work/runs/<slug>/raw/`:
+   ```bash
+   python3 -c "
+import zipfile
+with zipfile.ZipFile('<path del file allegato>') as z:
+    z.extractall('work/runs/<slug>/raw/')
+"
+   ```
+3. Da qui in poi segui il punto 3 dello Step 2a del playbook canonico (verifica formato/
+   colonne attese, segnala all'utente eventuali file mancanti o non validi rispetto a
+   quanto annunciato).
+
 ## Adattamento sandbox — delta rispetto al playbook canonico
 
 Il playbook che hai letto allo Step 0a di `SKILL.md` è scritto per Claude Code (filesystem
@@ -76,7 +144,7 @@ del repo, git disponibile). Eseguilo **invariato** tranne per queste equivalenze
 | `python scripts/X.py` | `python work/scripts/X.py` |
 | `runs/<slug>/...` | `work/runs/<slug>/...` (automatico: gli script derivano la root da `Path(__file__).parent.parent`) |
 | Step 0.3: `python scripts/fetch_dependencies.py` | già fatto allo Step 0a di `SKILL.md`. `<CLUSTERING_AGENT_PATH>` e `<KEYWORD_CLEANER_PATH>` valgono **entrambi** `work` |
-| Step 2a: download CSV grezzi | stesso meccanismo del playbook: `search_files`/`download_file_content` via MCP Drive, scrittura in `work/runs/<slug>/raw/` |
+| Step 2a: ingresso CSV grezzi | **non più Drive**: un `.zip` allegato direttamente in chat — vedi la sezione dedicata "Step 2a (variante claude.ai)" più sotto, non il meccanismo Drive del playbook canonico |
 | Step 5/6: template Sheet/Slide | scaricali in `work/.cache/template/` invece di `.cache/template/` (stessa logica di cache di sessione) |
 | Step 7: i due `commit` di `fetch_dependencies.py` | branch e SHA annotati allo Step 0a di `SKILL.md` |
 
@@ -100,6 +168,16 @@ giudizio editoriale sulle slide — è nel playbook: non reinterpretarlo qui.
   con aggregazioni pre-calcolate e grafici embedded statici (vedi playbook, Step 5/6). Ogni
   run/ricarica crea nuovi file su Drive: non esiste un'operazione MCP di aggiornamento
   in-place di un file esistente.
+- **Il canale "zip allegato in chat" per lo Step 2a (sopra) non è verificato in modo
+  esaustivo**: si basa sull'osservazione che questo sandbox esegue codice, non su una
+  conferma diretta che ogni allegato zip finisca sempre su un percorso reale del
+  filesystem in ogni sessione/versione dell'ambiente. Verificalo ad ogni run (vedi sopra)
+  invece di darlo per scontato. Lo stesso limite dimensionale non documentato può valere
+  anche per l'upload finale di `report.xlsx`/`deck.pptx` su Drive (Step 5.3/6e): a
+  differenza del download, per quello non esiste alcuna tecnica di scrittura a blocchi
+  (l'MCP Drive non supporta di costruire un file esistente in più passaggi, solo
+  `create_file` in un colpo unico) — se un giorno si bloccasse anche lì, non c'è ancora un
+  fallback pronto in questo bootstrap.
 
 ## Se qualcosa fallisce da qui in poi
 
@@ -107,3 +185,5 @@ giudizio editoriale sulle slide — è nel playbook: non reinterpretarlo qui.
 |---|---|
 | Errore o rifiuto dell'MCP Google Drive (template, cartelle, upload xlsx/pptx) | Connettore Drive non collegato in questo workspace, o senza accesso a quel file/cartella. **Fermati** e dillo all'utente — non esiste un fallback OAuth/token in questo flusso. |
 | Un problema di accesso a GitHub (fetch di codice/regole/playbook) | Non è questo il file che lo gestisce: la procedura e la relativa tabella di troubleshooting sono nello Step 0a di `SKILL.md` — se sei arrivato fin qui, quello step è già completato con successo. |
+| Lo zip allegato in chat (Step 2a variante claude.ai) non compare su nessun path del filesystem locale | Il canale non funziona in questa sessione come previsto: **fermati**, dillo all'utente e torna al meccanismo Drive del playbook canonico (Step 2a originale) — non ricostruire il contenuto a mano dal testo/base64 arrivato in chat. |
+| `zipfile.testzip()` segnala un file corrotto nello zip allegato | Upload arrivato incompleto (troncato durante il caricamento). Chiedi all'utente di ricaricare il file, non estrarre/usare un archivio con CRC non validi. |
