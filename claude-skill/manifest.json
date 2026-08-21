@@ -59,7 +59,7 @@
         "scripts/extract_semrush_zip.py",
         "scripts/drive_direct.py"
       ],
-      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Le operazioni Drive di questo flusso le fa Claude via MCP direttamente in conversazione (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, vedi playbook Step 1/2a/5/6), TRANNE il fast path opzionale via OAuth diretto di scripts/drive_direct.py (download template/upload report elaborato, Step 5/6 del playbook) — opt-in, usato solo se l'utente ha già configurato proprie credenziali OAuth, mai un'iniziativa di Claude: vedi playbook, sezione 'Fast path opzionale'. scripts/extract_semrush_zip.py è usato solo dalla variante claude.ai dello Step 2a (claude-skill/bootstrap.md, zip allegato in chat), non dal playbook canonico Claude Code."
+      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Le operazioni Drive di questo flusso le fa Claude via MCP direttamente in conversazione (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, vedi playbook Step 1/2a/5/6), TRANNE per il fast path via OAuth diretto di scripts/drive_direct.py (download template/upload report elaborato, Step 5/6 del playbook) — canale di default per questi due soli passaggi: Claude recupera da solo google_auth.json da GOOGLE_AUTH_FOLDER_ID, con fallback automatico su MCP se non e' disponibile. Vedi playbook, sezione 'Fast path (default per questi due passaggi)'. scripts/extract_semrush_zip.py e' usato solo dalla variante claude.ai dello Step 2a (claude-skill/bootstrap.md, zip allegato in chat), non dal playbook canonico Claude Code."
     },
     {
       "repo": "webanalytics-filoblu/public-claude-clustering-agent",
@@ -103,13 +103,15 @@
       "  GOOGLE_SHEET_TEMPLATE_ID, GOOGLE_SLIDE_TEMPLATE_ID,",
       "  GOOGLE_SLIDE_EXAMPLE_ID (facoltativa).",
       "",
-      "L'accesso a Drive/Sheets/Slides passa di default e obbligatoriamente dal tool MCP",
-      "Google Drive collegato alla chat (gestisce la propria autenticazione). Fa eccezione",
-      "solo il fast path opzionale via OAuth diretto (scripts/drive_direct.py, download",
-      "template/upload report elaborato): richiede un google_auth.json fornito",
-      "esplicitamente dall'utente (GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN, piu'",
-      "GOOGLE_API_KEY facoltativa) scritto fuori dall'albero del repo — mai un'iniziativa di",
-      "Claude, vedi il playbook canonico per il dettaglio."
+      "L'accesso a Drive/Sheets/Slides passa obbligatoriamente dal tool MCP Google Drive",
+      "collegato alla chat (gestisce la propria autenticazione) per la maggior parte del",
+      "flusso. Fa eccezione solo il fast path via OAuth diretto (scripts/drive_direct.py,",
+      "download template/upload report elaborato): e' il canale di default per questi due",
+      "soli passaggi. Claude recupera da solo un google_auth.json (GOOGLE_OAUTH_CLIENT_ID/",
+      "SECRET/REFRESH_TOKEN, piu' GOOGLE_API_KEY facoltativa) dalla cartella Drive",
+      "GOOGLE_AUTH_FOLDER_ID, scritto fuori dall'albero del repo; se non e' recuperabile,",
+      "fallback automatico sull'MCP per quel passaggio. Vedi il playbook canonico per il",
+      "dettaglio."
     ]
   },
 
@@ -125,6 +127,6 @@
       "oauth2.googleapis.com",
       "www.googleapis.com"
     ],
-    "_comment_opzionali": "Servono SOLO se l'utente vuole usare il fast path opzionale scripts/drive_direct.py (download template / upload report elaborato via OAuth diretto, vedi playbook canonico e claude-skill/bootstrap.md) su claude.ai: quello script fa HTTP diretto dal code execution del sandbox, bypassando l'MCP Drive per quei due soli passaggi, quindi qui il sandbox li filtra se non allowlistati esplicitamente. Senza questi due host il fast path fallisce con un errore di rete su claude.ai (non su Claude Code, dove il sandbox non filtra l'uscita): in quel caso lo script si ferma e la skill torna al flusso via connettore MCP, come da regola 'nessun fallback silenzioso' — nessun admin deve allowlistarli per il funzionamento standard della skill, solo per abilitare questo fast path opt-in."
+    "_comment_opzionali": "Servono per usare il fast path di default scripts/drive_direct.py (download template / upload report elaborato via OAuth diretto, vedi playbook canonico e claude-skill/bootstrap.md) su claude.ai: quello script fa HTTP diretto dal code execution del sandbox, bypassando l'MCP Drive per quei due soli passaggi, quindi qui il sandbox li filtra se non allowlistati esplicitamente. Senza questi due host il fast path fallisce con un errore di rete su claude.ai (non su Claude Code, dove il sandbox non filtra l'uscita): Claude lo tenta comunque di default per quei due passaggi, ma in quel caso lo script fallisce subito e la skill torna al flusso via connettore MCP, come da regola 'nessun fallback silenzioso' — nessun admin deve allowlistarli per il funzionamento standard della skill, solo per far funzionare (invece di limitarsi a fallire in modo pulito) questo fast path di default."
   }
 }

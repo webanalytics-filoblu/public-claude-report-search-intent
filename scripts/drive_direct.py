@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Fast path opzionale via Google Drive API diretta (OAuth con refresh token),
-alternativo alle chiamate MCP Google Drive per due soli passaggi del
-playbook: download dei template Sheet/Slide (Step 5 punto 1, Step 6) e
-upload del report elaborato con conversione automatica in Google
-Sheet/Slides (Step 5 punto 3, Step 6e).
+Fast path via Google Drive API diretta (OAuth con refresh token), usato di
+default (con fallback automatico su MCP Google Drive se le credenziali non
+sono disponibili) per due soli passaggi del playbook: download dei
+template Sheet/Slide (Step 5 punto 1, Step 6) e upload del report
+elaborato con conversione automatica in Google Sheet/Slides (Step 5 punto
+3, Step 6e).
 
-Vedi .claude/skills/claude_code/SKILL.md, sezione "Fast path opzionale:
-download template / upload file elaborati via Google API diretta", per il
-formato di google_auth.json e le regole di sicurezza sulla credenziale. Il
-flusso via connettore MCP Google Drive resta il default e l'unico
-obbligatorio: questo script è un percorso opt-in, mai proposto di
-iniziativa da Claude.
+Vedi .claude/skills/claude_code/SKILL.md, sezione "Fast path (default per
+questi due passaggi): download template / upload file elaborati via
+Google API diretta, con fallback su MCP", per il formato di
+google_auth.json e le regole di sicurezza sulla credenziale. Il flusso via
+connettore MCP Google Drive resta obbligatorio per tutto il resto del
+playbook, e resta il fallback per questi due passaggi se questo script
+fallisce o le credenziali non sono recuperabili.
 """
 import argparse
 import json
@@ -34,7 +36,7 @@ def _load_google_credentials(auth_file: str) -> dict:
     path = Path(auth_file).expanduser()
     if not path.exists():
         print(f"Errore: credenziali Google non trovate in {path}")
-        print("   Vedi SKILL.md, sezione 'Fast path opzionale: download template / upload file elaborati via Google API diretta'.")
+        print("   Vedi SKILL.md, sezione 'Fast path (default per questi due passaggi): download template / upload file elaborati via Google API diretta, con fallback su MCP'.")
         sys.exit(1)
     try:
         creds = json.loads(path.read_text(encoding="utf-8"))
@@ -153,7 +155,7 @@ def mode_upload_report(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Fast path opzionale via Google Drive API diretta (download template / upload report elaborato)"
+        description="Fast path via Google Drive API diretta, di default per questi due passaggi (download template / upload report elaborato)"
     )
     parser.add_argument("--mode", choices=["download-template", "upload-report"], required=True)
     parser.add_argument("--auth-file", default=DEFAULT_GOOGLE_AUTH_FILE,
