@@ -20,9 +20,14 @@ puoi recuperare tu stesso `google_auth.json` da `GOOGLE_AUTH_FOLDER_ID` (di tua 
 non serve che l'utente lo richieda) e usarlo per questi due soli passaggi; se non è
 recuperabile o lo script fallisce (anche per il filtro di rete del sandbox, vedi
 `required_sandbox_hosts.opzionali` più sotto), fallback automatico sul connettore MCP per
-quel passaggio, senza bloccarti. Vedi il playbook canonico, sezione "Fast path (default per
-questi due passaggi): download template / upload file elaborati via Google API diretta, con
-fallback su MCP", per il dettaglio completo (non ripetuto qui).
+quel passaggio, senza bloccarti. **Per questi due passaggi (download template, upload
+report elaborato) non caricare/scaricare mai il file tramite l'MCP senza aver prima
+tentato il fast path**: l'MCP non è una scelta equivalente da usare per comodità, è
+consentito solo come fallback dopo un tentativo di `drive_direct.py` andato a vuoto —
+**unica eccezione** è il file di credenziali `google_auth.json` in sé (punto 1 sopra),
+che non ha un fast path e va sempre recuperato via MCP. Vedi il playbook canonico, sezione
+"Fast path (default per questi due passaggi): download template / upload file elaborati
+via Google API diretta, con fallback su MCP", per il dettaglio completo (non ripetuto qui).
 
 ## Step 0c — Regole di clustering: da Google Drive, non da GitHub
 

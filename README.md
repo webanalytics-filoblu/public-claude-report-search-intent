@@ -45,7 +45,10 @@ principio già applicato in
 download template / upload file elaborati via Google API diretta, con fallback su MCP"):
 copre solo questi due passaggi, con fallback automatico sull'MCP se le credenziali OAuth
 non sono disponibili, e le credenziali (`google_auth.json`) non vanno mai scritte dentro
-l'albero del repo.
+l'albero del repo. Per questi due passaggi l'MCP non è un canale equivalente da scegliere
+a piacere: va usato solo dopo un tentativo di `drive_direct.py` andato a vuoto, con la sola
+eccezione del recupero del file di credenziali stesso (che non ha un fast path e passa
+sempre dall'MCP).
 
 Perdite di funzionalità accettate con questo cambio: niente più PivotTable native di
 Sheets (sostituite da aggregazioni pandas pre-calcolate + grafico embedded statico), niente
