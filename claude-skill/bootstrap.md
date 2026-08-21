@@ -79,7 +79,7 @@ un CSV di 101KB/135.000 caratteri base64). Un file `.zip` allegato **direttament
 chat** invece non è un formato "documento" che l'ambiente tenta di leggere come testo:
 se il sandbox ha esecuzione di codice (confermato in questo flusso: qui gira `pip
 install`, `git clone`), un allegato così finisce tipicamente su un percorso reale del
-filesystem locale, non nel contesto della conversazione — bypassando sia il limite di
+filesystem locale, non nel contesto della conversazione — evitando così sia il limite di
 token sia il rischio di troncamento del base64.
 
 **Prima di usare questo canale, verificalo (non assumerlo)**: questa non è un'ipotesi già
@@ -100,9 +100,11 @@ questo ambiente) **prima di fare qualunque altra cosa**:
 playbook canonico su cosa esportare da Semrush per ciascun CSV atteso (mese, mercato,
 filtro Brand/Not Brand — vedi "Cosa chiedere SEMPRE"/Step 2a lì), con un'istruzione in
 più: comprimere **tutti** i CSV di quel batch in un unico file `.zip` prima di allegarlo
-in chat (non un CSV nudo allegato direttamente: quello resta bloccato dal "BLOCCO DI
-SICUREZZA" del playbook canonico, che qui vale ancora — l'eccezione è solo per un
-archivio zip). Non aggregare l'intero periodo multi-mese in un solo zip se il periodo è
+in chat (non un CSV nudo allegato direttamente: quello resta bloccato dalla regola
+anti-saturazione contesto del playbook canonico, che qui vale ancora — l'eccezione è
+solo per un archivio zip, canale alternativo ufficialmente supportato in questo
+ambiente, non uno stratagemma per aggirare quella regola). Non aggregare l'intero
+periodo multi-mese in un solo zip se il periodo è
 lungo o il brand ha volumi alti: preferisci un batch per mese (o per filtro
 Brand/Not Brand), per le stesse ragioni di taglia già viste con Drive — anche questo
 canale ha probabilmente un limite dimensionale non documentato, solo più alto.
