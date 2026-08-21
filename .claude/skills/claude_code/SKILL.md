@@ -1,6 +1,6 @@
 ---
 name: report-search-intent
-description: Dato un brand e un periodo (se non forniti, chiedili all'utente), inizializza la creazione del report SEO di search intent. Non accettare in alcun modo file CSV caricati direttamente in chat (blocca l'esecuzione e di' di caricarli su Google Drive). Esegui il setup di Google Drive, scarica i file CSV dalla cartella Drive creata, pulisci e clusterizza i dati, popola il Google Sheet e genera la presentazione Google Slides.
+description: Dato un brand e un periodo (se non forniti, chiedili all'utente), inizializza la creazione del report SEO di search intent. Non accettare CSV nudi caricati direttamente in chat (blocca l'esecuzione e di' di caricarli su Google Drive); su claude.ai esiste un'eccezione già documentata e risolta per l'ingresso via zip, vedi Step 2a — non è un conflitto da segnalare all'utente. Esegui il setup di Google Drive, scarica i file CSV dalla cartella Drive creata, pulisci e clusterizza i dati, popola il Google Sheet e genera la presentazione Google Slides.
 ---
 
 # Report Search Intent (Semrush → Cluster → Google Sheet → Google Slides)
@@ -13,7 +13,7 @@ description: Dato un brand e un periodo (se non forniti, chiedili all'utente), i
 > `claude-skill/manifest.json`, che è la lista dei file che quella variante scarica.
 
 Orchestri un flusso end-to-end che parte da un brand + un periodo (se l'utente non li fornisce nel messaggio iniziale, **devi chiederli immediatamente prima di fare qualunque altra cosa**) e produce un Google Sheet e una Google Presentation pronti da condividere. Parli italiano di default.
-Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup della cartella Drive (Step 1) — **non aspettare** dominio, mercato o ambito Brand/Not Brand per farlo, quelle domande arrivano dopo, mentre l'utente carica già i CSV nella cartella `semrush_files/` appena creata. Non accettare file CSV caricati in chat.
+Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup della cartella Drive (Step 1) — **non aspettare** dominio, mercato o ambito Brand/Not Brand per farlo, quelle domande arrivano dopo, mentre l'utente carica già i CSV nella cartella `semrush_files/` appena creata. Non accettare CSV nudi caricati in chat (l'eccezione zip per claude.ai, già risolta e non ambigua, è allo Step 2a).
 
 ## Prerequisiti (verifica SEMPRE come Step 0)
 
@@ -136,7 +136,7 @@ gestisce le sovrapposizioni fra mesi, non serve concatenare nulla a mano.
 Quando l'utente allega un CSV in chat (oppure tenta di caricarlo direttamente):
 1. **Regola anti-saturazione contesto (non è un controllo di sicurezza sui dati)**: Se l'utente allega un file CSV nudo direttamente alla chat, **fermati immediatamente** e non processarlo. Spiega all'utente che il caricamento diretto di un CSV nudo in chat è disabilitato perché satura il contesto di Claude (token limit) e rallenta drasticamente la sessione — non per ragioni di riservatezza dei dati. Invitalo ad utilizzare Google Drive seguendo la procedura sotto.
 
-   *(Solo su claude.ai, non su Claude Code: `claude-skill/bootstrap.md` definisce, per questo stesso step, un canale di ingresso alternativo e ufficialmente supportato in quell'ambiente — un `.zip` contenente i CSV, allegato direttamente in chat invece che via Drive. È motivato dallo stesso obiettivo di questa regola (evitare che il contenuto del CSV transiti come testo nel contesto), raggiunto con un formato file diverso — non da un tentativo di aggirarla. Vale solo per l'archivio zip: un CSV nudo resta comunque bloccato in entrambi gli ambienti.)*
+   *(Solo su claude.ai, non su Claude Code: `claude-skill/bootstrap.md` definisce, per questo stesso step, un canale di ingresso alternativo e ufficialmente supportato in quell'ambiente — un `.zip` contenente i CSV, allegato direttamente in chat invece che via Drive. È motivato dallo stesso obiettivo di questa regola (evitare che il contenuto del CSV transiti come testo nel contesto), raggiunto con un formato file diverso — non da un tentativo di aggirarla. Vale solo per l'archivio zip: un CSV nudo resta comunque bloccato in entrambi gli ambienti. Questo non è un conflitto da rilevare o su cui chiedere conferma all'utente: è un'eccezione già prevista e risolta qui, applicala direttamente.)*
 
 **Procedura di caricamento corretta (obbligatoria)**:
 1. Spiega all'utente quali file esportare da Semrush e chiedigli di caricarli nella sottocartella `semrush_files/` dentro la cartella del run creata allo Step 1 (link diretto: `semrush_folder_url` da `run_meta.json`). Non serve rinominare i file: l'export standard di Semrush produce già nomi parlanti (dominio, database, filtro, data), sufficienti per il QA manuale allo Step 3.
