@@ -352,13 +352,14 @@ download dei CSV caricati dall'utente Step 2a, lettura di `GOOGLE_SLIDE_EXAMPLE_
 esclusivamente via MCP: questo fast path copre solo template download e upload report, esattamente
 come lo stesso principio applicato in `public-claude-clustering-agent` (`--mode fetch-sheets`).
 
-1. **Recupera `google_auth.json`** dalla cartella privata Drive che l'utente ti ha indicato
-   (non condivisa con l'organizzazione, a differenza delle cartelle template) con
-   `mcp__claude_ai_Google_Drive__read_file_content` (file piccolo, non uno Sheet/Slides —
-   nessun export necessario) e scrivilo su un path **fuori dalla repository git**,
-   tipicamente `~/.config/report-search-intent-agent/google_auth.json` (default letto dallo
-   script). Mai scriverlo dentro l'albero del repo, nemmeno in `runs/` o `.cache/`
-   (entrambi comunque gitignored).
+1. **Recupera `google_auth.json`** dalla cartella Drive `GOOGLE_AUTH_FOLDER_ID` (in
+   `drive_config.json` — non condivisa con l'organizzazione, a differenza delle cartelle
+   template: l'ID da solo non dà accesso a chi non abbia già un tool MCP Drive autorizzato
+   su quella cartella) con `mcp__claude_ai_Google_Drive__read_file_content` (file piccolo,
+   non uno Sheet/Slides — nessun export necessario) e scrivilo su un path **fuori dalla
+   repository git**, tipicamente `~/.config/report-search-intent-agent/google_auth.json`
+   (default letto dallo script). Mai scriverlo dentro l'albero del repo, nemmeno in `runs/`
+   o `.cache/` (entrambi comunque gitignored).
 2. Formato del file (fornito una tantum dall'utente, generato dal suo progetto OAuth Google
    Cloud — stesso schema usato da `public-claude-clustering-agent`):
    ```json
@@ -405,11 +406,12 @@ come lo stesso principio applicato in `public-claude-clustering-agent` (`--mode 
   loggata in chiaro, non va mai committata.
 - Non proporre mai tu questo fast path di tua iniziativa, né chiedere di default
   all'utente delle credenziali OAuth: usalo solo se l'utente lo ha già impostato
-  esplicitamente e ti ha indicato dove trovare `google_auth.json`.
-- L'ID della cartella Drive privata che contiene `google_auth.json` è personale
-  dell'utente (a differenza degli ID in `drive_config.json`, pensati per essere
-  condivisi/committati): non scriverlo in nessun file tracciato da git di questo repo
-  pubblico — resta solo nella conversazione/sessione corrente.
+  esplicitamente.
+- `GOOGLE_AUTH_FOLDER_ID` (in `drive_config.json`) è solo il *locatore* della cartella, non
+  la credenziale: è committato per scelta esplicita dell'utente, con la stessa logica degli
+  altri ID di questo file (non dà accesso da solo a chi non abbia già un tool MCP Drive
+  autorizzato su quella cartella). La vera credenziale resta `google_auth.json` al suo
+  interno — quello, mai il suo ID di cartella, non va **mai** committato.
 - Se `drive_direct.py` fallisce (credenziali scadute/mancanti, permessi insufficienti),
   non tentare fallback silenziosi: torna al flusso via connettore MCP per il passaggio
   fallito.

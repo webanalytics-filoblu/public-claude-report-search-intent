@@ -11,5 +11,8 @@
   "GOOGLE_SLIDE_TEMPLATE_ID": "1wHC-_BIEX1_Wji1n8Y166j0_m3MH49SXVZ1GuIldqh8",
 
   "GOOGLE_SLIDE_EXAMPLE_ID": "1O9Hmnf0CR5cZQn4HLFPtyFXbeubIINnVk9Osu4A7c8w",
-  "_comment_example": "Facoltativa: presentazione di riferimento gia' compilata (tono/stile editoriale), letta in sola lettura allo Step 6 del playbook. Mai duplicata ne' modificata."
+  "_comment_example": "Facoltativa: presentazione di riferimento gia' compilata (tono/stile editoriale), letta in sola lettura allo Step 6 del playbook. Mai duplicata ne' modificata.",
+
+  "GOOGLE_AUTH_FOLDER_ID": "1E2Z6TDJGrEVW5dLjiFP5RzLUNxuRQRBO",
+  "_comment_auth_folder": "Facoltativa: cartella Drive che contiene google_auth.json (credenziali OAuth per il fast path opzionale scripts/drive_direct.py, vedi SKILL.md 'Fast path opzionale'). A differenza degli altri ID sopra, non e' una cartella condivisa con l'organizzazione: l'accesso resta comunque riservato a chi ha gia' un tool MCP Drive autorizzato su di essa (l'ID da solo non sblocca nulla), ma il file al suo interno (non questo ID) e' la vera credenziale e non va mai committato."
 }
