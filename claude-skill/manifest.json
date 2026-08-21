@@ -114,12 +114,17 @@
   },
 
   "required_sandbox_hosts": {
-    "_comment": "Host che l'admin del workspace claude.ai deve allowlistare per il code execution (Settings -> Capabilities). Senza questi la skill si ferma a claude-skill/SKILL.md Step 0a: non e' aggirabile lato repo.",
+    "_comment": "Host che l'admin del workspace claude.ai deve allowlistare per il code execution (Settings -> Capabilities). Senza gli 'obbligatori' la skill si ferma a claude-skill/SKILL.md Step 0a: non e' aggirabile lato repo.",
     "obbligatori": [
       "pypi.org",
       "files.pythonhosted.org",
       "github.com"
     ],
-    "_comment_obbligatori": "pypi.org + files.pythonhosted.org servono al pip install (claude-skill/SKILL.md Step 0a: pandas/openpyxl/python-pptx). github.com serve al 'git clone' usato per TUTTO l'accesso a GitHub in questa skill (stesso Step 0a: bootstrap.md, manifest, read_in_context, fetch_to_sandbox) - se il sandbox blocca 'git clone' per motivi di sicurezza (non un problema di rete), lo step interessato si ferma: non esiste un connettore GitHub in questo workspace da usare come fallback. Non serve invece allowlistare alcun host Google API (oauth2.googleapis.com, *.googleapis.com): tutte le chiamate Drive/Sheets/Slides passano dal tool MCP Google Drive collegato alla chat, non da chiamate HTTP dirette dal code execution del sandbox."
+    "_comment_obbligatori": "pypi.org + files.pythonhosted.org servono al pip install (claude-skill/SKILL.md Step 0a: pandas/openpyxl/python-pptx). github.com serve al 'git clone' usato per TUTTO l'accesso a GitHub in questa skill (stesso Step 0a: bootstrap.md, manifest, read_in_context, fetch_to_sandbox) - se il sandbox blocca 'git clone' per motivi di sicurezza (non un problema di rete), lo step interessato si ferma: non esiste un connettore GitHub in questo workspace da usare come fallback. Per il flusso standard (Drive/Sheets/Slides via MCP) non serve allowlistare alcun host Google API: quelle chiamate passano dal tool MCP Google Drive collegato alla chat, non da HTTP diretto dal code execution del sandbox.",
+    "opzionali": [
+      "oauth2.googleapis.com",
+      "www.googleapis.com"
+    ],
+    "_comment_opzionali": "Servono SOLO se l'utente vuole usare il fast path opzionale scripts/drive_direct.py (download template / upload report elaborato via OAuth diretto, vedi playbook canonico e claude-skill/bootstrap.md) su claude.ai: quello script fa HTTP diretto dal code execution del sandbox, bypassando l'MCP Drive per quei due soli passaggi, quindi qui il sandbox li filtra se non allowlistati esplicitamente. Senza questi due host il fast path fallisce con un errore di rete su claude.ai (non su Claude Code, dove il sandbox non filtra l'uscita): in quel caso lo script si ferma e la skill torna al flusso via connettore MCP, come da regola 'nessun fallback silenzioso' — nessun admin deve allowlistarli per il funzionamento standard della skill, solo per abilitare questo fast path opt-in."
   }
 }
