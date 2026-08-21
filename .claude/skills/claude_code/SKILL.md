@@ -20,16 +20,21 @@ Sei operativo: appena hai il nome del brand e il periodo, inizi subito il setup 
 1. Il tool MCP Semrush deve essere collegato (lo è già, vedi istruzioni MCP di sessione) —
    serve solo per lo Step 2b (volumi brand secco, poche chiamate leggere): l'estrazione
    massiva delle posizioni organiche (Step 2a) non passa più da qui, vedi sotto.
-2. Il tool MCP Google Drive (`mcp__claude_ai_Google_Drive__*`) deve essere collegato: è
-   l'unico canale verso Drive/Sheets/Slides in questo flusso, non esiste più
-   un'autenticazione OAuth Google gestita da questo repo (niente `scripts/google_clients.py`,
-   niente `credentials/token.json`, niente refresh token da rinnovare). Gli ID statici
+2. Il tool MCP Google Drive (`mcp__claude_ai_Google_Drive__*`) deve essere collegato: è il
+   canale **default e obbligatorio** verso Drive/Sheets/Slides in questo flusso (creazione
+   cartelle, download dei CSV caricati dall'utente, lettura di `GOOGLE_SLIDE_EXAMPLE_ID`), e
+   non esiste più un'autenticazione OAuth Google gestita in modo permanente da questo repo
+   (niente `scripts/google_clients.py`, niente `credentials/token.json`). Gli ID statici
    (`GOOGLE_DRIVE_ROOT_FOLDER_ID`, `GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID` facoltativa,
    `GOOGLE_SHEET_TEMPLATE_ID`, `GOOGLE_SLIDE_TEMPLATE_ID`, `GOOGLE_SLIDE_EXAMPLE_ID`
    facoltativa) sono già committati in `drive_config.json` alla root del repo — non serve
    compilare un `.env` per questi valori, leggili direttamente da lì. Se il tool MCP Drive
    non è disponibile in questa sessione, **fermati** e dillo all'utente: non esiste un
-   fallback verso token/curl per Drive/Sheets/Slides in questo flusso.
+   fallback per la maggior parte del flusso. Le sole due eccezioni sono il download dei
+   template (Step 5 punto 1, Step 6) e l'upload del report elaborato (Step 5 punto 3, Step
+   6e), per cui esiste un fast path **opzionale** via Google API diretta (OAuth con refresh
+   token) — vedi la sezione dedicata prima dello Step 5: resta comunque opt-in, mai
+   un'iniziativa tua, e non copre nient'altro di questo flusso.
 3. `public-claude-clustering-agent` e `public-claude-semrush-keyword-cleaner` (Step 4 e Step
    3) non vanno clonati a mano: esegui SEMPRE, come parte di questo Step 0,
    ```bash
@@ -335,6 +340,80 @@ nessun tab né fetta. `build_sheet.py` segnala (senza bloccarsi) se, per un Clus
 splittato per Genere, alcune keyword restano fuori da tutte le label indicate (un valore
 di Genere presente nei dati ma dimenticato nel piano) — verifica se è voluto.
 
+## Fast path opzionale: download template / upload file elaborati via Google API diretta
+
+Il flusso via connettore MCP Google Drive (Step 5 punto 1/3, Step 6 e Step 6e) resta il
+**default e l'unico obbligatorio**. Se l'utente ha esplicitamente fornito credenziali OAuth
+proprie (non è mai un'iniziativa tua proporle), puoi usare `scripts/drive_direct.py` per
+velocizzare solo due passaggi: lo scaricamento dei template Sheet/Slide (Step 5.1, Step 6)
+e il caricamento del report elaborato xlsx/pptx con conversione automatica in Google
+Sheet/Slides (Step 5.3, Step 6e). Tutto il resto del flusso (creazione cartelle Step 1,
+download dei CSV caricati dall'utente Step 2a, lettura di `GOOGLE_SLIDE_EXAMPLE_ID`) resta
+esclusivamente via MCP: questo fast path copre solo template download e upload report, esattamente
+come lo stesso principio applicato in `public-claude-clustering-agent` (`--mode fetch-sheets`).
+
+1. **Recupera `google_auth.json`** dalla cartella privata Drive che l'utente ti ha indicato
+   (non condivisa con l'organizzazione, a differenza delle cartelle template) con
+   `mcp__claude_ai_Google_Drive__read_file_content` (file piccolo, non uno Sheet/Slides —
+   nessun export necessario) e scrivilo su un path **fuori dalla repository git**,
+   tipicamente `~/.config/report-search-intent-agent/google_auth.json` (default letto dallo
+   script). Mai scriverlo dentro l'albero del repo, nemmeno in `runs/` o `.cache/`
+   (entrambi comunque gitignored).
+2. Formato del file (fornito una tantum dall'utente, generato dal suo progetto OAuth Google
+   Cloud — stesso schema usato da `public-claude-clustering-agent`):
+   ```json
+   {
+     "GOOGLE_OAUTH_CLIENT_ID": "XXXXXXXXXXXX.apps.googleusercontent.com",
+     "GOOGLE_OAUTH_CLIENT_SECRET": "XXXXXXXXXXXXXXXXXXXXXXXX",
+     "GOOGLE_OAUTH_REFRESH_TOKEN": "1//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+     "GOOGLE_API_KEY": "XXXXXXXXXXXXXXXXXXXXXXXX"
+   }
+   ```
+   `GOOGLE_API_KEY` è opzionale (solo per attribuzione quota, non necessario per
+   l'autorizzazione: un file a condivisione ristretta non si sblocca con la sola API key,
+   serve il token OAuth). Gli altri tre campi sono obbligatori.
+3. **Download template** (alternativo a Step 5 punto 1 / Step 6, intro):
+   ```bash
+   python scripts/drive_direct.py --mode download-template \
+     --file-id <GOOGLE_SHEET_TEMPLATE_ID> \
+     --export-mime "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+     --out .cache/template/sheet_template.xlsx
+   ```
+   Per lo Slide template: `--file-id <GOOGLE_SLIDE_TEMPLATE_ID>`, `--export-mime
+   "application/vnd.openxmlformats-officedocument.presentationml.presentation"`, `--out
+   .cache/template/slide_template.pptx`. Popola lo stesso path che il flusso via connettore
+   avrebbe scritto — prosegui normalmente con Step 5/6, nessuna differenza a valle.
+4. **Upload del file elaborato con conversione** (alternativo a Step 5 punto 3 / Step 6e):
+   ```bash
+   python scripts/drive_direct.py --mode upload-report \
+     --parent-id <run_folder_id> \
+     --title "Search Intent - <Brand> - <Periodo>" \
+     --file runs/<slug>/output/report.xlsx \
+     --source-mime "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+     --convert-mime "application/vnd.google-apps.spreadsheet"
+   ```
+   Per il deck: `--file runs/<slug>/output/deck.pptx`, `--source-mime
+   "application/vnd.openxmlformats-officedocument.presentationml.presentation"`,
+   `--convert-mime "application/vnd.google-apps.presentation"`. Stampa `{"file_id":
+   "<id>"}`: registralo con `run_meta.py set` esattamente come faresti con l'id restituito
+   da `create_file` via connettore (`sheet_id`/`sheet_url` o `slide_id`/`slide_url`).
+
+**Regole di sicurezza, non negoziabili:**
+- `google_auth.json` contiene un refresh token: è una credenziale persistente legata a un
+  account Google specifico, non un ID pubblico come quelli in `drive_config.json`. Non va
+  **mai** scritta dentro l'albero del repo (nemmeno in path gitignorati), non va mai
+  loggata in chiaro, non va mai committata.
+- Non proporre mai tu questo fast path di tua iniziativa, né chiedere di default
+  all'utente delle credenziali OAuth: usalo solo se l'utente lo ha già impostato
+  esplicitamente e ti ha indicato dove trovare `google_auth.json`.
+- L'ID della cartella Drive privata che contiene `google_auth.json` è personale
+  dell'utente (a differenza degli ID in `drive_config.json`, pensati per essere
+  condivisi/committati): non scriverlo in nessun file tracciato da git di questo repo
+  pubblico — resta solo nella conversazione/sessione corrente.
+- Se `drive_direct.py` fallisce (credenziali scadute/mancanti, permessi insufficienti),
+  non tentare fallback silenziosi: torna al flusso via connettore MCP per il passaggio
+  fallito.
+
 ## Step 5 — Generare e caricare il Google Sheet
 
 Non c'è più un Google Sheet remoto da riempire in-place via API: generi un xlsx completo
@@ -351,7 +430,8 @@ via MCP, che lo converte automaticamente in Google Sheet.
    Scrivi il base64 risultante in `.cache/template/sheet_template.xlsx` (template più
    pesante di un CSV Semrush: se il risultato del tool viene redirezionato su file per
    limite di token, vedi la nota tecnica in Step 2a — decodifica da quel file, non a mano
-   nel contesto).
+   nel contesto). In alternativa, se l'utente ha configurato il fast path OAuth (vedi
+   sezione dedicata sopra), usa `drive_direct.py --mode download-template`.
 2. Genera l'xlsx del report:
    ```bash
    python scripts/build_sheet_xlsx.py \
@@ -394,7 +474,10 @@ via MCP, che lo converte automaticamente in Google Sheet.
      base64Content=<contenuto di runs/<slug>/output/report.xlsx>)
    ```
    La conversione automatica in Google Sheet è il comportamento di default (non passare
-   `disableConversionToGoogleType`). Registra l'id risultante:
+   `disableConversionToGoogleType`). In alternativa, se l'utente ha configurato il fast path
+   OAuth (vedi sezione dedicata prima dello Step 5), usa `drive_direct.py --mode
+   upload-report` con `--convert-mime "application/vnd.google-apps.spreadsheet"`. Registra
+   l'id risultante:
    ```bash
    python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key sheet_id --value "<id>"
    python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key sheet_url --value "https://docs.google.com/spreadsheets/d/<id>/edit"
@@ -424,7 +507,9 @@ mcp__claude_ai_Google_Drive__download_file_content(
   exportMimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation")
 ```
 Scrivi il base64 in `.cache/template/slide_template.pptx` (stessa nota tecnica di Step 2a
-se il tool redireziona il risultato su file per limite di token), poi:
+se il tool redireziona il risultato su file per limite di token). In alternativa, se
+l'utente ha configurato il fast path OAuth (vedi sezione dedicata prima dello Step 5), usa
+`drive_direct.py --mode download-template`. Poi:
 ```bash
 python scripts/inspect_template_pptx.py --pptx .cache/template/slide_template.pptx
 ```
@@ -564,7 +649,9 @@ mcp__claude_ai_Google_Drive__create_file(
   contentMimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation",
   base64Content=<contenuto di runs/<slug>/output/deck.pptx>)
 ```
-Registra l'id risultante:
+In alternativa, se l'utente ha configurato il fast path OAuth (vedi sezione dedicata prima
+dello Step 5), usa `drive_direct.py --mode upload-report` con `--convert-mime
+"application/vnd.google-apps.presentation"`. Registra l'id risultante:
 ```bash
 python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key slide_id --value "<id>"
 python scripts/run_meta.py set --run-meta runs/<slug>/run_meta.json --key slide_url --value "https://docs.google.com/presentation/d/<id>/edit"
@@ -598,9 +685,13 @@ questo run).
   blocco che lo script produce (`paste_rules_<vertical>_<lingua>.txt`, sezione "Proponi
   regole/brand → incolla manuale su Google Sheet" del `CLAUDE.md` di quel repo) — non c'è
   (e non serve) un commit su GitHub per questo.
-- Non esiste più un'autenticazione Google gestita da questo repo (niente OAuth, niente
-  refresh token da rinnovare): l'unico canale verso Drive/Sheets/Slides è l'MCP Google
-  Drive collegato in sessione. Se non è disponibile, la skill si ferma — non c'è fallback.
+- Nessuna autenticazione Google permanente gestita da questo repo: il canale default e
+  obbligatorio verso Drive/Sheets/Slides resta l'MCP Google Drive collegato in sessione. Se
+  non è disponibile, la skill si ferma per la maggior parte del flusso — non c'è fallback.
+  Fa eccezione il solo download template/upload report elaborato (Step 5/6), per cui esiste
+  un fast path opzionale via OAuth diretto (`scripts/drive_direct.py`, vedi sezione dedicata
+  prima dello Step 5): opt-in, mai proposto di iniziativa da Claude, credenziali sempre
+  fuori dall'albero del repo.
 - Niente più PivotTable native né grafici Sheets/Slides "linked": xlsx e pptx sono
   generati offline con aggregazioni pre-calcolate e grafici embedded statici. Ogni run
   (o ricarica) crea nuovi file su Drive: non esiste un'operazione MCP di aggiornamento

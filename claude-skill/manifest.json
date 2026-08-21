@@ -56,9 +56,10 @@
         "scripts/build_slides_pptx.py",
         "scripts/inspect_template_xlsx.py",
         "scripts/inspect_template_pptx.py",
-        "scripts/extract_semrush_zip.py"
+        "scripts/extract_semrush_zip.py",
+        "scripts/drive_direct.py"
       ],
-      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Nessuno script di questa lista fa più chiamate Google dirette (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, le operazioni Drive le fa Claude via MCP direttamente in conversazione, vedi playbook Step 1/2a/5/6). scripts/extract_semrush_zip.py è usato solo dalla variante claude.ai dello Step 2a (claude-skill/bootstrap.md, zip allegato in chat), non dal playbook canonico Claude Code."
+      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Le operazioni Drive di questo flusso le fa Claude via MCP direttamente in conversazione (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, vedi playbook Step 1/2a/5/6), TRANNE il fast path opzionale via OAuth diretto di scripts/drive_direct.py (download template/upload report elaborato, Step 5/6 del playbook) — opt-in, usato solo se l'utente ha già configurato proprie credenziali OAuth, mai un'iniziativa di Claude: vedi playbook, sezione 'Fast path opzionale'. scripts/extract_semrush_zip.py è usato solo dalla variante claude.ai dello Step 2a (claude-skill/bootstrap.md, zip allegato in chat), non dal playbook canonico Claude Code."
     },
     {
       "repo": "webanalytics-filoblu/public-claude-clustering-agent",
@@ -89,8 +90,8 @@
 
   "expected_config_keys": {
     "_comment": [
-      "Nessun segreto da gestire in questo flusso. Niente OAuth Google, niente GITHUB_TOKEN:",
-      "i tre repo coinvolti (questo, public-claude-clustering-agent,",
+      "Nessun segreto obbligatorio da gestire in questo flusso. Niente GITHUB_TOKEN: i tre",
+      "repo coinvolti (questo, public-claude-clustering-agent,",
       "public-claude-semrush-keyword-cleaner) sono tutti pubblici, quindi 'git clone' (Step",
       "0a di claude-skill/SKILL.md) non richiede alcuna credenziale.",
       "",
@@ -102,8 +103,13 @@
       "  GOOGLE_SHEET_TEMPLATE_ID, GOOGLE_SLIDE_TEMPLATE_ID,",
       "  GOOGLE_SLIDE_EXAMPLE_ID (facoltativa).",
       "",
-      "L'accesso a Drive/Sheets/Slides passa interamente dal tool MCP Google Drive collegato",
-      "alla chat (gestisce la propria autenticazione)."
+      "L'accesso a Drive/Sheets/Slides passa di default e obbligatoriamente dal tool MCP",
+      "Google Drive collegato alla chat (gestisce la propria autenticazione). Fa eccezione",
+      "solo il fast path opzionale via OAuth diretto (scripts/drive_direct.py, download",
+      "template/upload report elaborato): richiede un google_auth.json fornito",
+      "esplicitamente dall'utente (GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN, piu'",
+      "GOOGLE_API_KEY facoltativa) scritto fuori dall'albero del repo — mai un'iniziativa di",
+      "Claude, vedi il playbook canonico per il dettaglio."
     ]
   },
 
