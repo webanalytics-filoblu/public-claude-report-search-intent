@@ -20,9 +20,14 @@ puoi recuperare tu stesso `google_auth.json` da `GOOGLE_AUTH_FOLDER_ID` (di tua 
 non serve che l'utente lo richieda) e usarlo per questi due soli passaggi; se non è
 recuperabile o lo script fallisce (anche per il filtro di rete del sandbox, vedi
 `required_sandbox_hosts.opzionali` più sotto), fallback automatico sul connettore MCP per
-quel passaggio, senza bloccarti. Vedi il playbook canonico, sezione "Fast path (default per
-questi due passaggi): download template / upload file elaborati via Google API diretta, con
-fallback su MCP", per il dettaglio completo (non ripetuto qui).
+quel passaggio, senza bloccarti. **Per questi due passaggi (download template, upload
+report elaborato) non caricare/scaricare mai il file tramite l'MCP senza aver prima
+tentato il fast path**: l'MCP non è una scelta equivalente da usare per comodità, è
+consentito solo come fallback dopo un tentativo di `drive_direct.py` andato a vuoto —
+**unica eccezione** è il file di credenziali `google_auth.json` in sé (punto 1 sopra),
+che non ha un fast path e va sempre recuperato via MCP. Vedi il playbook canonico, sezione
+"Fast path (default per questi due passaggi): download template / upload file elaborati
+via Google API diretta, con fallback su MCP", per il dettaglio completo (non ripetuto qui).
 
 ## Step 0c — Regole di clustering: da Google Drive, non da GitHub
 
@@ -60,8 +65,7 @@ fermati e segnalalo invece di procedere con dati parziali.
 
 ## Step 0d — Verifica accesso ai template Drive
 
-Non c'è nessuna autenticazione da verificare (niente OAuth Google, niente refresh token):
-verifica solo che i template siano raggiungibili con l'MCP Drive già collegato, provando a
+Verifica solo che i template siano raggiungibili con l'MCP Drive già collegato, provando a
 leggerne i metadati:
 
 ```text
@@ -69,12 +73,22 @@ mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SHEET_TEMPLATE_ID>
 mcp__claude_ai_Google_Drive__get_file_metadata(fileId=<GOOGLE_SLIDE_TEMPLATE_ID>)
 ```
 
-Se falliscono (file non trovato o senza permessi), **fermati** e segnalalo — non
-improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/
-`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/`GOOGLE_SLIDE_EXAMPLE_ID` sono
-riferimenti statici (ID di file/cartella, non segreti): leggili da `drive_config.json`,
-già letto in Step 0a di `SKILL.md` (`read_in_context.drive_config` del manifest) — non serve
-scaricare un JSON di credenziali né compilare un `.env` per questi valori.
+Questo verifica solo il canale MCP (obbligatorio per la maggior parte del flusso, e con cui
+recuperi anche `google_auth.json` per il fast path — vedi sopra): non è una verifica del
+fast path OAuth in sé, che si tenta più avanti, al momento del download effettivo dei
+template (Step 5/6 del playbook canonico), con fallback automatico su questo stesso MCP se
+le credenziali non sono disponibili o il fast path fallisce. Non c'è comunque nulla da
+configurare qui in anticipo per l'OAuth (niente `.env`, niente credenziali da dettare in
+chat): se il fast path non è disponibile in quel momento, quei due passaggi tornano
+semplicemente all'MCP.
+
+Se le chiamate MCP qui sopra falliscono (file non trovato o senza permessi), **fermati** e
+segnalalo — non improvvisare fallback. `GOOGLE_DRIVE_ROOT_FOLDER_ID`/
+`GOOGLE_DRIVE_BRAND_ROOT_FOLDER_ID`/`GOOGLE_SHEET_TEMPLATE_ID`/`GOOGLE_SLIDE_TEMPLATE_ID`/
+`GOOGLE_SLIDE_EXAMPLE_ID` sono riferimenti statici (ID di file/cartella, non segreti):
+leggili da `drive_config.json`, già letto in Step 0a di `SKILL.md`
+(`read_in_context.drive_config` del manifest) — non serve scaricare un JSON di credenziali
+né compilare un `.env` per questi valori.
 
 ## Step 2a (variante claude.ai) — CSV Semrush: zip allegato in chat, non Drive
 

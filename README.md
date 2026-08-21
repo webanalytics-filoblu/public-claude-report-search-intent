@@ -45,7 +45,10 @@ principio già applicato in
 download template / upload file elaborati via Google API diretta, con fallback su MCP"):
 copre solo questi due passaggi, con fallback automatico sull'MCP se le credenziali OAuth
 non sono disponibili, e le credenziali (`google_auth.json`) non vanno mai scritte dentro
-l'albero del repo.
+l'albero del repo. Per questi due passaggi l'MCP non è un canale equivalente da scegliere
+a piacere: va usato solo dopo un tentativo di `drive_direct.py` andato a vuoto, con la sola
+eccezione del recupero del file di credenziali stesso (che non ha un fast path e passa
+sempre dall'MCP).
 
 Perdite di funzionalità accettate con questo cambio: niente più PivotTable native di
 Sheets (sostituite da aggregazioni pandas pre-calcolate + grafico embedded statico), niente
@@ -144,11 +147,15 @@ pratiche:
   da scaricare (e le `rules/` del clustering sono prese elencando la directory, così una
   lingua nuova non richiede modifiche). La procedura meccanica di fetch invece **va
   ricaricata su claude.ai se cambia** (cambia raramente: è uno schema fisso git-clone/repo).
-- **Nessun segreto in questo flusso**: i tre repo coinvolti (questo,
+- **Nessun segreto obbligatorio in questo flusso**: i tre repo coinvolti (questo,
   `public-claude-clustering-agent`, `public-claude-semrush-keyword-cleaner`) sono tutti
-  pubblici, quindi niente `GITHUB_TOKEN`. Nessun OAuth Google: l'unica cosa da verificare è
-  che il tool MCP Google Drive sia collegato in sessione — nessun JSON di credenziali Google
-  da recuperare, nessun refresh token da rinnovare.
+  pubblici, quindi niente `GITHUB_TOKEN`. Per il flusso standard (la maggior parte degli
+  step) l'unica cosa da verificare è che il tool MCP Google Drive sia collegato in sessione —
+  nessuna credenziale Google da gestire qui. Il fast path di default per template/upload
+  (vedi sopra) usa invece un refresh token OAuth: il relativo `google_auth.json` viene
+  recuperato automaticamente da Claude, tramite lo stesso MCP, da una cartella Drive
+  dedicata (`GOOGLE_AUTH_FOLDER_ID`) quando serve — non gestito né rinnovato da questo
+  repo; se non è disponibile, quei due passaggi tornano semplicemente all'MCP.
 - **Prerequisito non aggirabile**: il sandbox di code execution di claude.ai filtra gli host
   in uscita, quindi un admin del workspace deve allowlistare gli host elencati in
   `required_sandbox_hosts` del manifest (`pypi.org`/`files.pythonhosted.org` per il

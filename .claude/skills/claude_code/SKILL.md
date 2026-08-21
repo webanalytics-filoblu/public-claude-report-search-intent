@@ -431,6 +431,11 @@ specifico — non è un errore, è il comportamento di fallback previsto.
   torna al flusso via connettore MCP per il passaggio fallito — questo è l'unico fallback
   previsto, non inventarne altri (non chiedere credenziali in chat, non riprovare
   all'infinito).
+- **Per questi due passaggi, l'MCP non è mai una scelta equivalente al fast path**: non
+  caricare/scaricare template o report tramite l'MCP senza aver **prima tentato**
+  `drive_direct.py` e averlo visto fallire. L'unica eccezione è il file di credenziali
+  `google_auth.json` in sé (punto 1 sopra): quello non ha un fast path e va sempre
+  recuperato via MCP, non è soggetto a questa regola.
 
 ## Step 5 — Generare e caricare il Google Sheet
 
