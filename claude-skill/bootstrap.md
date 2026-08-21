@@ -107,32 +107,21 @@ lungo o il brand ha volumi alti: preferisci un batch per mese (o per filtro
 Brand/Not Brand), per le stesse ragioni di taglia già viste con Drive — anche questo
 canale ha probabilmente un limite dimensionale non documentato, solo più alto.
 
-**Con il file confermato sul filesystem**:
-1. Verifica l'integrità con il CRC32 interno allo zip, prima di estrarre (non serve
-   conoscere in anticipo la dimensione attesa):
-   ```bash
-   python3 -c "
-import zipfile
-with zipfile.ZipFile('<path del file allegato>') as z:
-    bad = z.testzip()
-    if bad:
-        raise SystemExit(f'CRC non valido per: {bad}')
-    print('OK, CRC validi per', len(z.namelist()), 'file:', z.namelist())
-"
-   ```
-   Se `testzip()` segnala un file corrotto, l'upload è arrivato incompleto: chiedi
-   all'utente di ricaricarlo, non proseguire con un'estrazione parziale.
-2. Estrai tutti i CSV in `work/runs/<slug>/raw/`:
-   ```bash
-   python3 -c "
-import zipfile
-with zipfile.ZipFile('<path del file allegato>') as z:
-    z.extractall('work/runs/<slug>/raw/')
-"
-   ```
-3. Da qui in poi segui il punto 3 dello Step 2a del playbook canonico (verifica formato/
-   colonne attese, segnala all'utente eventuali file mancanti o non validi rispetto a
-   quanto annunciato).
+**Con il file confermato sul filesystem**, verifica CRC ed estrazione sono un unico
+passaggio con `scripts/extract_semrush_zip.py` (scaricato in `work/scripts/` allo Step 0a
+di `SKILL.md`, stesso stile/convenzioni degli altri script di questo repo — niente
+one-liner python scritti a mano qui):
+```bash
+python work/scripts/extract_semrush_zip.py \
+  --zip "<path del file allegato>" \
+  --output-dir work/runs/<slug>/raw
+```
+Si ferma con errore esplicito (senza estrarre nulla) se lo zip non è valido o se
+`zipfile.testzip()` trova un CRC non valido su un file interno — in quel caso l'upload è
+arrivato incompleto: chiedi all'utente di ricaricarlo, non proseguire con un'estrazione
+parziale. Se invece va a buon fine, stampa l'elenco dei file estratti: da qui in poi segui
+il punto 3 dello Step 2a del playbook canonico (verifica formato/colonne attese, segnala
+all'utente eventuali file mancanti o non validi rispetto a quanto annunciato).
 
 ## Adattamento sandbox — delta rispetto al playbook canonico
 
@@ -186,4 +175,4 @@ giudizio editoriale sulle slide — è nel playbook: non reinterpretarlo qui.
 | Errore o rifiuto dell'MCP Google Drive (template, cartelle, upload xlsx/pptx) | Connettore Drive non collegato in questo workspace, o senza accesso a quel file/cartella. **Fermati** e dillo all'utente — non esiste un fallback OAuth/token in questo flusso. |
 | Un problema di accesso a GitHub (fetch di codice/regole/playbook) | Non è questo il file che lo gestisce: la procedura e la relativa tabella di troubleshooting sono nello Step 0a di `SKILL.md` — se sei arrivato fin qui, quello step è già completato con successo. |
 | Lo zip allegato in chat (Step 2a variante claude.ai) non compare su nessun path del filesystem locale | Il canale non funziona in questa sessione come previsto: **fermati**, dillo all'utente e torna al meccanismo Drive del playbook canonico (Step 2a originale) — non ricostruire il contenuto a mano dal testo/base64 arrivato in chat. |
-| `zipfile.testzip()` segnala un file corrotto nello zip allegato | Upload arrivato incompleto (troncato durante il caricamento). Chiedi all'utente di ricaricare il file, non estrarre/usare un archivio con CRC non validi. |
+| `scripts/extract_semrush_zip.py` si ferma per CRC non valido | Upload arrivato incompleto (troncato durante il caricamento). Chiedi all'utente di ricaricare il file, non estrarre/usare un archivio con CRC non validi. |

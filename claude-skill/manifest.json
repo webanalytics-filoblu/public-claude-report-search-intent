@@ -55,9 +55,10 @@
         "scripts/build_sheet_xlsx.py",
         "scripts/build_slides_pptx.py",
         "scripts/inspect_template_xlsx.py",
-        "scripts/inspect_template_pptx.py"
+        "scripts/inspect_template_pptx.py",
+        "scripts/extract_semrush_zip.py"
       ],
-      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Nessuno script di questa lista fa più chiamate Google dirette (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, le operazioni Drive le fa Claude via MCP direttamente in conversazione, vedi playbook Step 1/2a/5/6)."
+      "_comment": "scripts/fetch_dependencies.py NON serve qui: fa git clone, e su claude.ai le dipendenze arrivano dai due blocchi sotto (stessa procedura di claude-skill/SKILL.md Step 0a). Nessuno script di questa lista fa più chiamate Google dirette (niente google_clients.py/drive_setup.py/authorize_drive_files.py/download|upload_raw_to_drive.py: eliminati, le operazioni Drive le fa Claude via MCP direttamente in conversazione, vedi playbook Step 1/2a/5/6). scripts/extract_semrush_zip.py è usato solo dalla variante claude.ai dello Step 2a (claude-skill/bootstrap.md, zip allegato in chat), non dal playbook canonico Claude Code."
     },
     {
       "repo": "webanalytics-filoblu/public-claude-clustering-agent",
