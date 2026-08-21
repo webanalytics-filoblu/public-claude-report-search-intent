@@ -53,14 +53,51 @@ def main():
             )
             sys.exit(1)
 
-        non_csv = [n for n in names if not n.lower().endswith(".csv")]
-        if non_csv:
-            print(f"Attenzione: nello zip ci sono file non CSV, estratti comunque: {non_csv}", file=sys.stderr)
+        # Estrazione "appiattita": chi consuma questi CSV (es.
+        # public-claude-semrush-keyword-cleaner) li cerca con una scansione non
+        # recursiva della cartella di output. Se lo zip li avvolge in una sottocartella
+        # (comportamento predefinito di molti tool "comprimi cartella"), un extractall
+        # normale li piazzerebbe un livello troppo in profondità, con un fallimento a
+        # valle ("nessun file trovato") tecnicamente corretto ma confuso — i CSV
+        # ci sarebbero, solo nel posto sbagliato. Scriviamo quindi ogni entry CSV
+        # direttamente dentro output_dir, ignorando eventuali sottocartelle, e
+        # scartiamo i metadati che macOS aggiunge tipicamente comprimendo una cartella
+        # (__MACOSX/, ._nomefile, .DS_Store), che altrimenti finirebbero come file
+        # sciolti indistinguibili da un CSV vero.
+        extracted = []
+        seen_basenames = {}
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            name = info.filename
+            basename = Path(name).name
+            if name.startswith("__MACOSX/") or basename.startswith("._") or basename == ".DS_Store":
+                continue
+            if not basename:
+                continue
+            if basename in seen_basenames:
+                print(
+                    f"Nome file duplicato dopo l'appiattimento: '{seen_basenames[basename]}' e '{name}' "
+                    f"finirebbero entrambi in {output_dir / basename}. Rinomina i file nello zip ed evita "
+                    "cartelle con lo stesso nome file, poi ricarica.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            seen_basenames[basename] = name
+            with zf.open(info) as src, open(output_dir / basename, "wb") as dst:
+                dst.write(src.read())
+            extracted.append(basename)
 
-        zf.extractall(output_dir)
+    if not extracted:
+        print(f"Nessun file utile nello zip dopo aver scartato cartelle/metadati: {zip_path}", file=sys.stderr)
+        sys.exit(1)
 
-    print(f"CRC verificati, {len(names)} file estratti in {output_dir}:")
-    for name in names:
+    non_csv = [n for n in extracted if not n.lower().endswith(".csv")]
+    if non_csv:
+        print(f"Attenzione: nello zip ci sono file non CSV, estratti comunque: {non_csv}", file=sys.stderr)
+
+    print(f"CRC verificati, {len(extracted)} file estratti in {output_dir}:")
+    for name in extracted:
         print(f"  {name}")
 
 
