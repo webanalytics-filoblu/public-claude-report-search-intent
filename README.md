@@ -36,15 +36,16 @@ autorizzare via Picker). Il meccanismo è cambiato radicalmente:
    Sheet/Google Slides. Questo resta il canale **default e obbligatorio**.
 
 Per soli due passaggi — download dei template (Step 5.1, Step 6) e upload del report
-elaborato (Step 5.3, Step 6e) — esiste un fast path **opzionale** che sostituisce l'MCP con
-una chiamata diretta alla Google Drive API via OAuth (refresh token) + API key facoltativa,
-lo stesso principio già applicato in
+elaborato (Step 5.3, Step 6e) — il canale **di default** sostituisce l'MCP con una chiamata
+diretta alla Google Drive API via OAuth (refresh token) + API key facoltativa, lo stesso
+principio già applicato in
 [public-claude-clustering-agent](https://github.com/webanalytics-filoblu/public-claude-clustering-agent)
 (`--mode fetch-sheets`). È implementato in `scripts/drive_direct.py` e documentato in
-`.claude/skills/claude_code/SKILL.md` ("Fast path opzionale: download template / upload
-file elaborati via Google API diretta"): resta strettamente opt-in (mai un'iniziativa di
-Claude), copre solo questi due passaggi, e le credenziali OAuth (`google_auth.json`) non
-vanno mai scritte dentro l'albero del repo.
+`.claude/skills/claude_code/SKILL.md` ("Fast path (default per questi due passaggi):
+download template / upload file elaborati via Google API diretta, con fallback su MCP"):
+copre solo questi due passaggi, con fallback automatico sull'MCP se le credenziali OAuth
+non sono disponibili, e le credenziali (`google_auth.json`) non vanno mai scritte dentro
+l'albero del repo.
 
 Perdite di funzionalità accettate con questo cambio: niente più PivotTable native di
 Sheets (sostituite da aggregazioni pandas pre-calcolate + grafico embedded statico), niente
@@ -176,7 +177,7 @@ public-claude-report-search-intent/
 │   ├── build_slides_pptx.py       ← genera il pptx del deck offline (partendo dal template Slides scaricato)
 │   ├── inspect_template_xlsx.py   ← diagnostica read-only su un template Sheet esportato in xlsx
 │   ├── inspect_template_pptx.py   ← diagnostica read-only su un template Slides esportato in pptx
-│   └── drive_direct.py            ← fast path opzionale via OAuth diretto (download template / upload report, alternativo all'MCP)
+│   └── drive_direct.py            ← fast path di default via OAuth diretto (download template / upload report; fallback: MCP)
 ├── .cache/                    ← copie GitHub di public-claude-clustering-agent /
 │                                  public-claude-semrush-keyword-cleaner (gitignored, auto-generate)
 ├── runs/                      ← output per-run (gitignored: dati keyword dei clienti)
@@ -184,21 +185,23 @@ public-claude-report-search-intent/
 └── .env                        ← override locali facoltativi (path/repo/branch dipendenze, gitignored)
 ```
 
-Il caricamento su Drive (cartelle, upload xlsx/pptx) e il download dei template/CSV passano
-di default da Claude direttamente, in conversazione, con il tool MCP Google Drive (vedi
-`SKILL.md`, Step 1/2a/5/6) — nessun client Drive autenticato permanente lato script. Per
-solo template download e upload report elaborato esiste in più `scripts/drive_direct.py`,
-un fast path opzionale via OAuth diretto (vedi sopra), da usare solo se l'utente ha già
-configurato le proprie credenziali.
+La creazione di cartelle e il download dei CSV passano sempre da Claude direttamente, in
+conversazione, con il tool MCP Google Drive (vedi `SKILL.md`, Step 1/2a) — nessun client
+Drive autenticato permanente lato script. Per il solo download dei template e l'upload del
+report elaborato, il canale di default è invece `scripts/drive_direct.py` (fast path via
+OAuth diretto, vedi sopra), con fallback automatico sull'MCP se le credenziali non sono
+disponibili.
 
 ## Note di design
 
-- **Nessuna autenticazione Google permanente gestita da questo repo**: il canale default e
-  obbligatorio verso Drive/Sheets/Slides resta il tool MCP Google Drive collegato alla
-  sessione, che gestisce la propria auth — niente scope OAuth `drive.file` da autorizzare
-  via Picker, niente account Google dedicato per l'uso standard. Il solo fast path
-  opzionale per template/upload (`scripts/drive_direct.py`) richiede invece un refresh
-  token OAuth fornito esplicitamente dall'utente, mai gestito o rinnovato da questo repo.
+- **Nessuna autenticazione Google permanente gestita da questo repo**: il canale
+  obbligatorio verso Drive/Sheets/Slides per la maggior parte del flusso resta il tool MCP
+  Google Drive collegato alla sessione, che gestisce la propria auth — niente scope OAuth
+  `drive.file` da autorizzare via Picker, niente account Google dedicato per l'uso
+  standard. Il fast path di default per template/upload (`scripts/drive_direct.py`) usa
+  invece un refresh token OAuth, recuperato automaticamente da Claude da una cartella Drive
+  dedicata (`GOOGLE_AUTH_FOLDER_ID`) — mai gestito o rinnovato da questo repo, e con
+  fallback sull'MCP se non è disponibile.
 - **Pivot per cluster**: sostituita da un'**aggregazione statica pre-calcolata in pandas**
   (`groupby` su Sotto Cluster / Cluster Effettivo / colonna extra) scritta come tabella a 2
   colonne, con un grafico `openpyxl.chart.PieChart` embedded che la referenzia — non più
